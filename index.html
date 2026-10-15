@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>JATAYU Aero - One flight. Four missions.</title>
+<meta name="description" content="JATAYU Aero is developing an airborne carrier UAV that deploys autonomous child UAVs in flight, a modular dual-use UAS platform with initial field validation planned in hybrid solar and wind parks.">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="canonical" href="https://jatayu-aero.com/">
+<link rel="icon" type="image/png" href="brand/favicon-64.png">
+<link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
+<!-- Open Graph (link previews on LinkedIn / messengers) -->
+<meta property="og:title" content="JATAYU Aero - One flight. Four missions.">
+<meta property="og:description" content="A modular dual-use UAS platform: an airborne Carrier UAV deploying autonomous Child UAVs mid-flight equipped for modular mission profiles.">
+<meta property="og:image" content="https://jatayu-aero.com/brand/og-image.jpg">
+<meta property="og:url" content="https://jatayu-aero.com/">
+<meta property="og:type" content="website">
+
+
+<style>
+/* ============================================================
+   FONTS — self-hosted in vendor/fonts/ (no third-party requests),
+   with system-font fallbacks.
+   ============================================================ */
+@font-face{font-family:"Space Grotesk";font-weight:400;font-display:swap;src:url(vendor/fonts/space-grotesk-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Space Grotesk";font-weight:500;font-display:swap;src:url(vendor/fonts/space-grotesk-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Space Grotesk";font-weight:700;font-display:swap;src:url(vendor/fonts/space-grotesk-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url(vendor/fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:500;font-display:swap;src:url(vendor/fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}
+
+/* ============================================================
+   DESIGN TOKENS — JATAYU design language
+   carbon #0d0d0d · electric blue #0044ff · aluminium #8a9ba8
+   logo cobalt #0333c0 (from the new transparent logo master)
+   ============================================================ */
+:root{
+  --carbon:#0d0d0d; --carbon-2:#121216; --carbon-3:#1a1a20;
+  --blue:#0044ff; --blue-hi:#5b86ff; --cobalt:#0333c0;
+  --alu:#9fb0bd;            /* aluminium, lifted slightly for ≥7:1 contrast on carbon */
+  --ink:#eef1f4;
+  --line:rgba(159,176,189,.16);
+  --font-d:"Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-m:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --gutter:clamp(20px,5vw,72px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* overflow-x:clip (not hidden): "hidden" on html+body makes <body> a scroll container,
+   which silently breaks position:sticky on the 3D stage */
+html,body{background:var(--carbon);color:var(--ink);font-family:var(--font-d);overflow-x:clip}
+body{line-height:1.5;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::selection{background:var(--blue);color:#fff}
+:focus-visible{outline:2px solid var(--blue-hi);outline-offset:3px}
+/* carbon-weave texture */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+  background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 1px,transparent 1px 6px),
+                   repeating-linear-gradient(-45deg,rgba(255,255,255,.012) 0 1px,transparent 1px 6px)}
+.accent{color:transparent;-webkit-text-stroke:1.3px var(--blue-hi)}
+
+/* ---------- PRELOADER ---------- */
+#preloader{position:fixed;inset:0;z-index:300;background:var(--carbon);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:22px}
+#preloader img{width:min(150px,34vw);opacity:0;transform:scale(.85)}
+#pre-bar{width:min(240px,56vw);height:1px;background:var(--line);position:relative;overflow:hidden}
+#pre-bar i{position:absolute;inset:0;background:var(--blue);transform:scaleX(0);transform-origin:left}
+#pre-count{font-family:var(--font-m);font-size:12px;color:var(--alu);letter-spacing:.2em}
+
+/* ---------- CURSOR (fine pointers only) ---------- */
+#cursor{position:fixed;top:0;left:0;width:10px;height:10px;border-radius:50%;background:var(--blue-hi);
+  z-index:250;pointer-events:none;opacity:0;mix-blend-mode:screen;transition:width .25s,height .25s,opacity .3s,background .25s}
+#cursor.on{opacity:1}
+#cursor.grow{width:52px;height:52px;background:rgba(91,134,255,.22)}
+@media (hover:none),(pointer:coarse){#cursor{display:none}}
+
+/* ---------- NAV ---------- */
+header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  gap:14px;padding:16px var(--gutter);transition:background .4s,padding .4s,border-color .4s;border-bottom:1px solid transparent}
+header.scrolled{background:rgba(13,13,13,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  padding:10px var(--gutter);border-bottom-color:var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.26em;font-size:14px;white-space:nowrap}
+.brand img{width:40px;height:auto}
+.brand span{color:var(--alu);font-weight:500}
+.nav-links{display:flex;gap:28px;font-family:var(--font-m);font-size:12px;letter-spacing:.14em;color:var(--alu)}
+.nav-links a{position:relative;padding:4px 0;transition:color .25s}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;background:var(--blue-hi);
+  transform:scaleX(0);transform-origin:right;transition:transform .35s cubic-bezier(.65,0,.35,1)}
+.nav-links a:hover{color:var(--ink)} .nav-links a:hover::after{transform:scaleX(1);transform-origin:left}
+.nav-right{display:flex;align-items:center;gap:14px}
+.lang{display:flex;align-items:center;gap:4px;font-family:var(--font-m);font-size:12px;letter-spacing:.12em;color:var(--alu)}
+.lang button{padding:6px 4px;color:var(--alu);transition:color .2s}
+.lang button[aria-pressed="true"]{color:var(--ink);text-decoration:underline;text-decoration-color:var(--blue-hi);text-underline-offset:5px}
+.pill{font-family:var(--font-m);font-size:12px;letter-spacing:.12em;border:1px solid rgba(91,134,255,.6);
+  padding:10px 20px;border-radius:999px;position:relative;overflow:hidden;display:inline-block;white-space:nowrap;
+  isolation:isolate;transition:border-color .3s}
+.pill::before{content:"";position:absolute;inset:0;background:var(--blue);transform:translateY(101%);
+  transition:transform .35s cubic-bezier(.65,0,.35,1);z-index:-1}
+.pill:hover{border-color:var(--blue)} .pill:hover::before{transform:translateY(0)}
+@media (max-width:900px){.nav-links{display:none}}
+@media (max-width:420px){.brand span{display:none}.brand{letter-spacing:.18em}.pill{padding:8px 12px;font-size:11px}.nav-right{gap:10px}}
+
+/* ============================================================
+   FLIGHT — sticky 3D stage, scroll drives the story
+   ============================================================ */
+#flight{position:relative;height:440vh;z-index:2}
+.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+#webgl{position:absolute;inset:0;z-index:0}
+#webgl canvas{display:block;width:100%!important;height:100%!important}
+.stage::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 15%,transparent 45%,rgba(13,13,13,.7) 100%),
+             linear-gradient(180deg,rgba(13,13,13,.55) 0%,transparent 22%,transparent 50%,rgba(13,13,13,.9) 100%)}
+/* WebGL unavailable → show the logo mark instead of the scene */
+.stage.no-webgl #webgl{background:url(brand/mark-640.png) center 38%/min(46vw,420px) no-repeat;opacity:.5}
+
+.hero-copy{position:absolute;left:var(--gutter);right:var(--gutter);bottom:clamp(30px,7vh,80px);z-index:3}
+.eyebrow{font-family:var(--font-m);font-size:clamp(10px,1.15vw,12px);letter-spacing:.26em;color:var(--blue-hi);
+  margin-bottom:clamp(12px,2.2vh,24px);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.eyebrow::before{content:"";width:30px;height:1px;background:var(--blue)}
+h1{font-weight:700;line-height:.93;letter-spacing:-.015em;text-transform:uppercase;font-size:clamp(34px,9.2vw,150px)}
+h1 .ln{display:block;overflow:hidden;padding-bottom:.04em}
+h1 .ln>span{display:inline-block;transform:translateY(112%)}
+.no-anim h1 .ln>span{transform:none}
+.hero-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-top:clamp(18px,3.4vh,38px);flex-wrap:wrap}
+.hero-sub{max-width:52ch;color:var(--alu);font-size:clamp(14px,1.45vw,17px);line-height:1.65}
+.hero-sub b{color:var(--ink);font-weight:500}
+.badge{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-m);font-size:11px;letter-spacing:.18em;
+  border:1px solid rgba(91,134,255,.5);padding:8px 14px;border-radius:999px;background:rgba(13,13,13,.55);white-space:nowrap}
+.badge i{width:7px;height:7px;border-radius:50%;background:var(--blue-hi);box-shadow:0 0 10px var(--blue-hi)}
+.scroll-hint{font-family:var(--font-m);font-size:11px;letter-spacing:.22em;color:var(--alu);display:flex;align-items:center;gap:12px;white-space:nowrap}
+.scroll-hint i{width:1px;height:40px;background:var(--line);position:relative;overflow:hidden;display:block}
+.scroll-hint i::after{content:"";position:absolute;left:0;top:-50%;width:100%;height:50%;background:var(--blue-hi);animation:drip 1.8s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes drip{to{top:110%}}
+.hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:16px}
+
+/* story steps (opacity driven from JS) */
+.step{position:absolute;left:var(--gutter);bottom:clamp(36px,9vh,100px);z-index:3;width:min(540px,calc(100% - 2*var(--gutter)));
+  opacity:0;visibility:hidden}
+.step .k{font-family:var(--font-m);font-size:12px;letter-spacing:.24em;color:var(--blue-hi)}
+.step h2{font-size:clamp(28px,4.2vw,58px);line-height:1.02;text-transform:uppercase;font-weight:700;margin:12px 0 14px}
+.step p{color:var(--alu);font-size:clamp(14px,1.4vw,17px);line-height:1.7}
+.step p b{color:var(--ink);font-weight:500}
+.rail{position:absolute;right:var(--gutter);top:50%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;gap:16px;
+  font-family:var(--font-m);font-size:11px;letter-spacing:.16em;color:var(--alu);opacity:0}
+.rail div{display:flex;align-items:center;gap:10px;transition:color .3s}
+.rail div i{width:26px;height:1px;background:var(--line);position:relative;overflow:hidden}
+.rail div i b{position:absolute;inset:0;background:var(--blue-hi);transform:scaleX(0);transform-origin:left}
+.rail div.on{color:var(--ink)}
+/* projected child-UAV labels */
+.lab .ls{color:var(--alu)}
+.lab{position:absolute;left:0;top:0;z-index:2;font-family:var(--font-m);font-size:10px;letter-spacing:.14em;
+  padding:5px 9px;border:1px solid rgba(91,134,255,.65);background:rgba(13,13,13,.78);white-space:nowrap;opacity:0;pointer-events:none;will-change:transform}
+@media (max-width:640px){.rail{display:none}.lab{font-size:9px;padding:4px 7px;letter-spacing:.08em}.lab .ls{display:none}}
+
+/* ---------- MARQUEE ---------- */
+.marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:15px 0;background:var(--carbon-2);position:relative;z-index:2}
+.marquee-track{display:flex;width:max-content;animation:mq 34s linear infinite}
+.marquee-track span{font-family:var(--font-m);font-size:13px;letter-spacing:.22em;color:var(--alu);white-space:nowrap;padding-right:44px}
+.marquee-track b{color:var(--blue-hi);font-weight:400;padding:0 20px}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* ---------- SECTION SCAFFOLD ---------- */
+section{position:relative;z-index:2}
+.sec{padding:clamp(80px,13vh,150px) var(--gutter)}
+.sec-head{display:flex;align-items:baseline;gap:20px;margin-bottom:clamp(30px,5.5vh,64px)}
+.sec-num{font-family:var(--font-m);font-size:12px;color:var(--blue-hi);letter-spacing:.2em;flex-shrink:0}
+.sec-title{font-weight:700;text-transform:uppercase;letter-spacing:-.01em;line-height:1.02;font-size:clamp(30px,5.4vw,74px);min-width:0;overflow-wrap:anywhere}
+.lead{color:var(--alu);font-size:clamp(15px,1.55vw,18px);line-height:1.7;max-width:60ch;margin:-12px 0 clamp(28px,5vh,52px)}
+.js-anim [data-reveal]{opacity:0;transform:translateY(34px)}
+
+/* ---------- USP CALLOUT (required in every JATAYU output) ---------- */
+.usp{border:1px solid rgba(91,134,255,.45);background:linear-gradient(135deg,rgba(0,68,255,.12),rgba(0,68,255,.02) 60%);
+  padding:clamp(26px,4vw,56px);position:relative;overflow:hidden}
+.usp::before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:var(--blue)}
+.usp .tag{font-family:var(--font-m);font-size:11px;letter-spacing:.26em;color:var(--blue-hi);margin-bottom:18px}
+.usp h2{font-size:clamp(24px,3.4vw,46px);font-weight:500;line-height:1.18;max-width:24em;position:relative}
+.usp h2 b{color:var(--blue-hi);font-weight:700}
+.usp p{color:var(--alu);margin-top:18px;max-width:64ch;font-size:clamp(14px,1.4vw,17px);line-height:1.7;position:relative}
+.usp .badge{margin-top:24px;white-space:normal;line-height:1.5}
+.usp-mark{position:absolute;right:-20px;bottom:-30px;width:clamp(160px,24vw,360px);opacity:.10;pointer-events:none}
+
+/* ---------- CENTRAL USE CASE ---------- */
+.core{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,80px);align-items:center}
+.core-tag{display:inline-block;font-family:var(--font-m);font-size:11px;letter-spacing:.22em;color:var(--carbon);background:var(--blue-hi);padding:6px 12px;margin-bottom:18px}
+.core h3{font-size:clamp(26px,3.4vw,46px);text-transform:uppercase;line-height:1.05;font-weight:700}
+.core p{color:var(--alu);font-size:clamp(15px,1.5vw,17px);line-height:1.7;margin-top:16px;max-width:56ch}
+.core ul{list-style:none;margin-top:24px;display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+.core li{background:var(--carbon-2);padding:16px 18px;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
+.core li svg{width:26px;height:26px;stroke:var(--blue-hi);fill:none;stroke-width:1.4;margin-top:2px}
+.core li b{display:block;font-weight:700;font-size:16px}
+.core li span{color:var(--alu);font-size:14px;line-height:1.6}
+.core-art{border:1px solid var(--line);background:var(--carbon-2);position:relative;overflow:hidden;aspect-ratio:1/.82}
+.core-art .shot{width:100%;height:100%;display:block;object-fit:cover}
+.shot{display:block;width:100%;background:var(--carbon-2)}
+.shot:not([src]){visibility:hidden}
+.mcard .shot-wrap{margin:0;border-left:1px solid var(--line);position:relative}
+.mcard .shot{width:100%;height:100%;aspect-ratio:16/10;object-fit:cover}
+.no-shots .shot-wrap,.no-shots .core-art{display:none}
+.core-art .cap{position:absolute;left:14px;bottom:12px;right:14px;display:flex;justify-content:space-between;gap:10px;
+  font-family:var(--font-m);font-size:10px;letter-spacing:.16em;color:var(--alu)}
+
+/* ---------- PROFILES ---------- */
+.prof-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.prof{background:var(--carbon-2);padding:clamp(22px,2.4vw,34px);position:relative;transition:background .35s}
+.prof:hover{background:var(--carbon-3)}
+.prof::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.65,0,.35,1)}
+.prof:hover::after{transform:scaleX(1)}
+.prof svg{width:38px;height:38px;stroke:var(--blue-hi);fill:none;stroke-width:1.3}
+.prof .k{font-family:var(--font-m);font-size:11px;letter-spacing:.2em;color:var(--blue-hi);margin:20px 0 8px}
+.prof h3{font-size:clamp(19px,1.8vw,23px);font-weight:700}
+.prof p{color:var(--alu);font-size:14.5px;line-height:1.65;margin-top:10px}
+
+/* ---------- FURTHER APPLICATIONS (pinned horizontal on desktop) ---------- */
+#missions{overflow:hidden}
+.hwrap{display:flex;gap:clamp(18px,2vw,28px);padding:0 var(--gutter);width:max-content;align-items:stretch}
+.mcard{width:clamp(640px,66vw,1040px);flex-shrink:0;border:1px solid var(--line);background:var(--carbon-2);
+  display:grid;grid-template-columns:minmax(250px,33%) minmax(0,1fr);position:relative;overflow:hidden;transition:border-color .35s}
+.mcard>*{min-width:0}
+.mcard .txt{padding:clamp(24px,2.6vw,36px);display:flex;flex-direction:column;position:relative;z-index:1}
+.mcard:hover{border-color:rgba(91,134,255,.6)}
+.mcard .idx{font-family:var(--font-m);font-size:11px;letter-spacing:.2em;color:var(--blue-hi);display:flex;justify-content:space-between;gap:10px}
+.mcard .idx em{font-style:normal;color:var(--alu);border:1px solid var(--line);padding:2px 8px}
+.mcard h3{font-size:clamp(21px,2.2vw,28px);font-weight:700;text-transform:uppercase;margin:14px 0 12px;line-height:1.08}
+.mcard p{color:var(--alu);font-size:14.5px;line-height:1.7}
+.mcard .glow{position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-70px;background:radial-gradient(circle,rgba(0,68,255,.16),transparent 70%);pointer-events:none}
+.dual{margin:clamp(26px,5vh,48px) var(--gutter) 0;font-family:var(--font-m);font-size:12px;letter-spacing:.06em;color:var(--alu);
+  border-left:2px solid var(--blue);padding:4px 0 4px 14px;max-width:80ch;line-height:1.6}
+
+/* ---------- DESIGN TARGETS ---------- */
+.spec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.spec{background:var(--carbon-2);padding:clamp(22px,2.6vw,38px);min-width:0}
+.spec .v{font-weight:700;font-size:clamp(24px,2.6vw,46px);line-height:1.05;letter-spacing:-.02em}
+.spec .k{font-family:var(--font-m);font-size:11.5px;letter-spacing:.14em;color:var(--blue-hi);text-transform:uppercase;line-height:1.5;margin-bottom:14px}
+.spec .d{color:var(--alu);font-size:14.5px;line-height:1.65;margin-top:14px}
+.spec .v2{display:flex;flex-direction:column;gap:6px;font-size:clamp(22px,2.3vw,36px)}
+.spec .v2 span{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.spec .v2 em{font-style:normal;font-family:var(--font-m);font-size:11px;letter-spacing:.16em;color:var(--alu);font-weight:400}
+a.badge{transition:border-color .3s,background .3s}
+a.badge:hover{border-color:var(--blue-hi);background:rgba(0,68,255,.18)}
+a.badge::after{content:"→";margin-left:2px;color:var(--blue-hi)}
+.note{font-family:var(--font-m);font-size:11.5px;letter-spacing:.08em;color:var(--alu);margin-top:16px}
+
+/* ---------- STATUS TIMELINE ---------- */
+.tl{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(14px,1.6vw,22px);position:relative}
+.tl::before{content:"";position:absolute;left:0;right:0;top:9px;height:1px;background:var(--line)}
+.tl .t{position:relative;padding-top:34px}
+.tl .t::before{content:"";position:absolute;top:2px;left:0;width:15px;height:15px;border-radius:50%;border:1px solid var(--alu);background:var(--carbon)}
+.tl .t.done::before{background:var(--blue);border-color:var(--blue)}
+.tl .t.now::before{background:var(--carbon);border:2px solid var(--blue-hi);box-shadow:0 0 0 5px rgba(91,134,255,.18)}
+.tl .when{font-family:var(--font-m);font-size:11px;letter-spacing:.2em;color:var(--blue-hi)}
+.tl h3{font-size:17px;font-weight:700;margin:8px 0 6px;line-height:1.3}
+.tl p{color:var(--alu);font-size:14px;line-height:1.6}
+.reg{margin-top:clamp(30px,5vh,52px);border:1px solid var(--line);background:var(--carbon-2);padding:clamp(18px,2.4vw,28px);
+  color:var(--alu);font-size:14.5px;line-height:1.7;display:grid;grid-template-columns:30px 1fr;gap:14px}
+.reg b{color:var(--ink);font-weight:500}
+.reg svg{width:24px;height:24px;stroke:var(--blue-hi);fill:none;stroke-width:1.4}
+
+/* ---------- TEAM ---------- */
+.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(18px,2vw,28px)}
+.tcard{border:1px solid var(--line);background:var(--carbon-2);padding:clamp(24px,2.8vw,40px);transition:border-color .35s,transform .35s}
+.tcard:hover{border-color:rgba(91,134,255,.6);transform:translateY(-5px)}
+.tcard .ini{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;
+  margin-bottom:20px;background:rgba(0,68,255,.14);color:var(--blue-hi);border:1px solid rgba(91,134,255,.45)}
+.tcard .role{font-family:var(--font-m);font-size:11px;letter-spacing:.16em;color:var(--blue-hi);text-transform:uppercase;line-height:1.6}
+.tcard h3{font-size:clamp(21px,2.1vw,27px);font-weight:700;margin:12px 0 4px}
+.tcard .sub{color:var(--alu);font-size:13px;font-family:var(--font-m)}
+.tcard p{color:var(--alu);font-size:15px;line-height:1.7;margin-top:16px}
+
+/* ---------- CONTACT / FOOTER ---------- */
+footer{border-top:1px solid var(--line);padding:clamp(70px,11vh,120px) var(--gutter) 26px;position:relative;overflow:hidden;background:var(--carbon-2);z-index:2}
+.foot-cta{display:grid;grid-template-columns:1.3fr .7fr;gap:40px;margin-bottom:clamp(50px,9vh,100px)}
+.foot-cta h2{font-size:clamp(30px,5.2vw,70px);font-weight:700;text-transform:uppercase;line-height:1.02;overflow-wrap:anywhere}
+.foot-cta p{color:var(--alu);margin-top:18px;max-width:52ch;font-size:clamp(15px,1.5vw,17px);line-height:1.7}
+.foot-links{display:flex;flex-direction:column;gap:14px;font-family:var(--font-m);font-size:14px;align-self:end;min-width:0}
+.foot-links a{color:var(--alu);transition:color .25s;overflow-wrap:anywhere}
+.foot-links a:hover{color:var(--blue-hi)}
+.foot-links .mail{color:var(--ink);font-size:clamp(14px,1.5vw,17px)}
+.giant{display:flex;align-items:center;justify-content:center;gap:clamp(10px,2vw,30px);user-select:none}
+.giant img{width:clamp(56px,11vw,190px);opacity:.9}
+.giant span{font-weight:700;line-height:.8;letter-spacing:.04em;font-size:clamp(52px,14.5vw,260px);color:transparent;-webkit-text-stroke:1px rgba(159,176,189,.32)}
+.foot-meta{display:flex;justify-content:space-between;gap:14px 28px;flex-wrap:wrap;margin-top:34px;
+  font-family:var(--font-m);font-size:10.5px;letter-spacing:.1em;color:rgba(159,176,189,.75);line-height:1.7}
+.foot-meta a{text-decoration:underline;text-underline-offset:3px}
+.gloss{margin-top:16px;font-family:var(--font-m);font-size:10px;letter-spacing:.06em;color:rgba(159,176,189,.6);line-height:1.8}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:1020px){
+  .core{grid-template-columns:1fr}
+  .prof-grid{grid-template-columns:1fr 1fr}
+  .tl{grid-template-columns:1fr;gap:0}
+  .tl::before{left:7px;right:auto;top:0;bottom:0;width:1px;height:auto}
+  .tl .t{padding:0 0 26px 36px}
+  .tl .t::before{top:3px}
+  .foot-cta{grid-template-columns:1fr}
+}
+@media (max-width:1200px){.spec-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:900px){
+  .hwrap{flex-direction:column;width:auto;padding:0 var(--gutter);transform:none!important}
+  .mcard{width:100%;grid-template-columns:minmax(0,1fr)}
+  .mcard .shot-wrap{border-left:0;border-top:1px solid var(--line)}
+}
+@media (max-width:640px){
+  .prof-grid{grid-template-columns:1fr}
+  .spec-grid{grid-template-columns:1fr}
+  .team-grid{grid-template-columns:1fr}
+  .hero-foot{flex-direction:column;align-items:flex-start}
+  .hero-side{align-items:center;flex-direction:row;gap:14px;flex-wrap:wrap}
+  #flight{height:400vh}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}
+  .js-anim [data-reveal]{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ PRELOADER ============ -->
+<div id="preloader" aria-hidden="true">
+  <img src="brand/mark-160.png" alt="">
+  <div id="pre-bar"><i></i></div>
+  <div id="pre-count">00</div>
+</div>
+<div id="cursor" aria-hidden="true"></div>
+
+<!-- ============ NAV ============ -->
+<header id="topbar">
+  <a class="brand" href="#flight" data-hover><img src="brand/mark-160.png" alt="JATAYU Aero logo" width="40" height="31">JATAYU <span>AERO</span></a>
+  <nav class="nav-links" aria-label="Main">
+    <a href="#usecase" data-i18n="nav.usecase" data-hover>USE CASE</a>
+    <a href="#system" data-i18n="nav.system" data-hover>SYSTEM</a>
+    <a href="#status" data-i18n="nav.status" data-hover>STATUS</a>
+    <a href="#team" data-i18n="nav.team" data-hover>TEAM</a>
+  </nav>
+  <div class="nav-right">
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="en" aria-pressed="true">EN</button><span>/</span><button data-lang="de" aria-pressed="false">DE</button>
+    </div>
+    <a class="pill" href="#contact" data-i18n="nav.contact" data-hover>CONTACT</a>
+  </div>
+</header>
+
+<!-- ============ FLIGHT: hero + 3-step scroll story over one sticky 3D stage ============ -->
+<section id="flight" aria-label="JATAYU flight sequence">
+  <div class="stage" id="stage">
+    <div id="webgl" aria-hidden="true"></div>
+
+    <!-- hero copy -->
+    <div class="hero-copy" id="heroCopy">
+      <div class="eyebrow" data-i18n="hero.eyebrow">RESEARCH VENTURE · HOCHSCHULE HOF · BAVARIA</div>
+      <h1>
+        <span class="ln"><span data-i18n="hero.l1">ONE FLIGHT.</span></span>
+        <span class="ln"><span class="accent" data-i18n="hero.l2">FOUR MISSIONS.</span></span>
+      </h1>
+      <div class="hero-foot">
+        <p class="hero-sub" data-i18n="hero.sub"></p>
+        <div class="hero-side">
+          <a class="badge" href="patent.html" data-hover><i></i><span data-i18n="badge.patent">PATENT PENDING · DPMA</span></a>
+          <div class="scroll-hint"><span data-i18n="hero.scroll">SCROLL TO FLY</span><i></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- story steps (opacity driven by scroll progress) -->
+    <div class="step" id="step1"><div class="k" data-i18n="s1.k"></div><h2 data-i18n="s1.h"></h2><p data-i18n="s1.p"></p></div>
+    <div class="step" id="step2"><div class="k" data-i18n="s2.k"></div><h2 data-i18n="s2.h"></h2><p data-i18n="s2.p"></p></div>
+    <div class="step" id="step3"><div class="k" data-i18n="s3.k"></div><h2 data-i18n="s3.h"></h2><p data-i18n="s3.p"></p></div>
+
+    <div class="rail" id="rail" aria-hidden="true">
+      <div><i><b></b></i><span data-i18n="rail.1"></span></div>
+      <div><i><b></b></i><span data-i18n="rail.2"></span></div>
+      <div><i><b></b></i><span data-i18n="rail.3"></span></div>
+    </div>
+
+    <!-- projected labels for the 4 child UAVs -->
+    <div class="lab" data-i18n="lab.0"></div>
+    <div class="lab" data-i18n="lab.1"></div>
+    <div class="lab" data-i18n="lab.2"></div>
+    <div class="lab" data-i18n="lab.3"></div>
+  </div>
+</section>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true"><div class="marquee-track" id="mq"></div></div>
+
+<!-- ============ USP ============ -->
+<section class="sec" id="why" style="padding-bottom:0">
+  <div class="usp" data-reveal>
+    <img class="usp-mark" src="brand/mark-640.png" alt="" aria-hidden="true">
+    <div class="tag" data-i18n="usp.tag"></div>
+    <h2 data-i18n="usp.h"></h2>
+    <p data-i18n="usp.p"></p>
+    <a class="badge" href="patent.html" data-hover><i></i><span data-i18n="usp.patent"></span></a>
+  </div>
+</section>
+
+<!-- ============ 01 CENTRAL USE CASE: hybrid solar + wind parks ============ -->
+<section class="sec" id="usecase">
+  <div class="sec-head" data-reveal><span class="sec-num">01</span><h2 class="sec-title" data-i18n="uc.title"></h2></div>
+  <div class="core">
+    <div data-reveal>
+      <span class="core-tag" data-i18n="uc.tag"></span>
+      <h3 data-i18n="uc.h"></h3>
+      <p data-i18n="uc.p"></p>
+      <ul>
+        <li><svg viewBox="0 0 24 24"><path d="M3 15l2-6h7l-2 6zM12 15l2-6h7l-2 6z"/><path d="M6 4l1.5 2M12 3v2.5M18 4l-1.5 2"/></svg>
+          <div><b data-i18n="uc.l1h"></b><span data-i18n="uc.l1p"></span></div></li>
+        <li><svg viewBox="0 0 24 24"><path d="M12 22V10"/><circle cx="12" cy="9" r="1.4"/><path d="M12 9V2M12 9l6 4M12 9l-6 4"/></svg>
+          <div><b data-i18n="uc.l2h"></b><span data-i18n="uc.l2p"></span></div></li>
+        <li><svg viewBox="0 0 24 24"><path d="M4 20h16M7 20V9l5-4 5 4v11"/><path d="M10 13h4M10 16h4"/></svg>
+          <div><b data-i18n="uc.l3h"></b><span data-i18n="uc.l3p"></span></div></li>
+        <li><svg viewBox="0 0 24 24"><path d="M4 6h16v10H8l-4 4z"/><path d="M8 10h8M8 13h5"/></svg>
+          <div><b data-i18n="uc.l4h"></b><span data-i18n="uc.l4p"></span></div></li>
+      </ul>
+    </div>
+    <!-- illustration: hybrid park, carrier + 4 children (abstract, capability-level only) -->
+    <div class="core-art" data-reveal>
+      <img class="shot" data-shot="core" alt="Carrier UAV with four child UAVs inspecting a hybrid solar and wind park">
+      <div class="cap"><span data-i18n="uc.cap1"></span><span data-i18n="uc.cap2"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 SYSTEM: child profiles ============ -->
+<section class="sec" id="system" style="padding-top:0">
+  <div class="sec-head" data-reveal><span class="sec-num">02</span><h2 class="sec-title" data-i18n="sys.title"></h2></div>
+  <p class="lead" data-reveal data-i18n="sys.lead"></p>
+  <div class="prof-grid" data-reveal>
+    <article class="prof"><svg viewBox="0 0 40 40"><rect x="6" y="11" width="28" height="19" rx="2"/><circle cx="20" cy="20.5" r="5.5"/><path d="M14 11l2-4h8l2 4"/></svg>
+      <div class="k">P·01</div><h3 data-i18n="p1.h"></h3><p data-i18n="p1.p"></p></article>
+    <article class="prof"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="4"/><circle cx="20" cy="20" r="9" stroke-opacity=".6"/><circle cx="20" cy="20" r="14.5" stroke-opacity=".3"/></svg>
+      <div class="k">P·02</div><h3 data-i18n="p2.h"></h3><p data-i18n="p2.p"></p></article>
+    <article class="prof"><svg viewBox="0 0 40 40"><path d="M20 34V18"/><circle cx="20" cy="15" r="2.5"/><path d="M13 9a10 10 0 0 0 0 12M27 9a10 10 0 0 1 0 12M8.5 5a16 16 0 0 0 0 20M31.5 5a16 16 0 0 1 0 20" stroke-opacity=".7"/></svg>
+      <div class="k">P·03</div><h3 data-i18n="p3.h"></h3><p data-i18n="p3.p"></p></article>
+    <article class="prof"><svg viewBox="0 0 40 40"><path d="M8 16l12-7 12 7v14l-12 7-12-7z"/><path d="M8 16l12 7 12-7M20 23v14"/><path d="M20 1v5M17 3.5l3 3 3-3"/></svg>
+      <div class="k">P·04</div><h3 data-i18n="p4.h"></h3><p data-i18n="p4.p"></p></article>
+  </div>
+</section>
+
+<!-- ============ 03 FURTHER APPLICATIONS (pinned horizontal on desktop) ============ -->
+<section id="missions">
+  <div class="sec" style="padding-bottom:clamp(20px,4vh,40px);padding-top:0">
+    <div class="sec-head" data-reveal><span class="sec-num">03</span><h2 class="sec-title" data-i18n="ms.title"></h2></div>
+  </div>
+  <div class="hwrap" id="hwrap">
+    <article class="mcard"><div class="glow"></div><div class="txt"><div class="idx"><span>A·01</span></div><h3 data-i18n="m1.h"></h3><p data-i18n="m1.p"></p></div>
+      <figure class="shot-wrap"><img class="shot" data-shot="search" alt=""></figure></article>
+    <article class="mcard"><div class="glow"></div><div class="txt"><div class="idx"><span>A·02</span></div><h3 data-i18n="m2.h"></h3><p data-i18n="m2.p"></p></div>
+      <figure class="shot-wrap"><img class="shot" data-shot="fire" alt=""></figure></article>
+    <article class="mcard"><div class="glow"></div><div class="txt"><div class="idx"><span>A·03</span></div><h3 data-i18n="m3.h"></h3><p data-i18n="m3.p"></p></div>
+      <figure class="shot-wrap"><img class="shot" data-shot="rescue" alt=""></figure></article>
+    <article class="mcard"><div class="glow"></div><div class="txt"><div class="idx"><span>A·04</span></div><h3 data-i18n="m5.h"></h3><p data-i18n="m5.p"></p></div>
+      <figure class="shot-wrap"><img class="shot" data-shot="sea" alt=""></figure></article>
+    <article class="mcard"><div class="glow"></div><div class="txt"><div class="idx"><span>A·05</span><em data-i18n="m4.tag"></em></div><h3 data-i18n="m4.h"></h3><p data-i18n="m4.p"></p></div>
+      <figure class="shot-wrap"><img class="shot" data-shot="farm" alt=""></figure></article>
+  </div>
+  <p class="dual" data-reveal data-i18n="dual"></p>
+  <div style="height:clamp(30px,6vh,60px)"></div>
+</section>
+
+<!-- ============ 04 DESIGN TARGETS ============ -->
+<section class="sec" id="targets" style="padding-top:clamp(40px,8vh,90px)">
+  <div class="sec-head" data-reveal><span class="sec-num">04</span><h2 class="sec-title" data-i18n="tg.title"></h2></div>
+  <div class="spec-grid" data-reveal>
+    <div class="spec"><div class="k" data-i18n="tg.sw.k"></div><div class="v">1 + N</div><p class="d" data-i18n="tg.sw.d"></p></div>
+    <div class="spec"><div class="k" data-i18n="tg.ai.k"></div><div class="v" data-i18n="tg.ai.v"></div><p class="d" data-i18n="tg.ai.d"></p></div>
+    <div class="spec"><div class="k" data-i18n="tg.au.k"></div><div class="v" data-i18n="tg.au.v"></div><p class="d" data-i18n="tg.au.d"></p></div>
+    <div class="spec"><div class="k" data-i18n="tg.mod.k"></div><div class="v" data-i18n="tg.mod.v"></div><p class="d" data-i18n="tg.mod.d"></p></div>
+    <div class="spec"><div class="k" data-i18n="tg.plan.k"></div><div class="v" data-i18n="tg.plan.v"></div><p class="d" data-i18n="tg.plan.d"></p></div>
+    <div class="spec"><div class="k" data-i18n="tg.w.k"></div><div class="v v2" data-i18n="tg.w.v"></div><p class="d" data-i18n="tg.w.d"></p></div>
+    <div class="spec"><div class="k" data-i18n="tg.rg.k"></div><div class="v" data-i18n="tg.rg.v"></div><p class="d" data-i18n="tg.rg.d"></p></div>
+    <div class="spec"><div class="k" data-i18n="tg.vt.k"></div><div class="v">VTOL</div><p class="d" data-i18n="tg.vt.d"></p></div>
+  </div>
+  <p class="note" data-reveal data-i18n="tg.note"></p>
+</section>
+
+<!-- ============ 05 STATUS & ROADMAP ============ -->
+<section class="sec" id="status" style="padding-top:0">
+  <div class="sec-head" data-reveal><span class="sec-num">05</span><h2 class="sec-title" data-i18n="st.title"></h2></div>
+  <div class="tl" data-reveal>
+    <div class="t done"><div class="when" data-i18n="st.1w"></div><h3 data-i18n="st.1h"></h3><p data-i18n="st.1p"></p></div>
+    <div class="t now"><div class="when" data-i18n="st.2w"></div><h3 data-i18n="st.2h"></h3><p data-i18n="st.2p"></p></div>
+    <div class="t"><div class="when" data-i18n="st.3w"></div><h3 data-i18n="st.3h"></h3><p data-i18n="st.3p"></p></div>
+    <div class="t"><div class="when" data-i18n="st.4w"></div><h3 data-i18n="st.4h"></h3><p data-i18n="st.4p"></p></div>
+    <div class="t"><div class="when" data-i18n="st.5w"></div><h3 data-i18n="st.5h"></h3><p data-i18n="st.5p"></p></div>
+  </div>
+  <div class="reg" data-reveal>
+    <svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+    <p data-i18n="st.reg"></p>
+  </div>
+</section>
+
+<!-- ============ 06 TEAM ============ -->
+<section class="sec" id="team" style="padding-top:0">
+  <div class="sec-head" data-reveal><span class="sec-num">06</span><h2 class="sec-title" data-i18n="tm.title"></h2></div>
+  <div class="team-grid">
+    <article class="tcard" data-reveal>
+      <div class="ini">AK</div>
+      <div class="role" data-i18n="tm.a.role"></div>
+      <h3>Amol Vivek Kulkarni</h3>
+      <div class="sub">MSc Computational Mechanics · Universität Stuttgart</div>
+      <p data-i18n="tm.a.p"></p>
+    </article>
+    <article class="tcard" data-reveal>
+      <div class="ini">UK</div>
+      <div class="role" data-i18n="tm.u.role"></div>
+      <h3>Utkarsh Prashant Kulkarni</h3>
+      <div class="sub">MSc Chemical &amp; Energy Engineering · OVGU Magdeburg</div>
+      <p data-i18n="tm.u.p"></p>
+    </article>
+  </div>
+</section>
+
+<!-- ============ CONTACT / FOOTER ============ -->
+<footer id="contact">
+  <div class="foot-cta">
+    <div data-reveal>
+      <h2 data-i18n="ct.h"></h2>
+      <p data-i18n="ct.p"></p>
+    </div>
+    <div class="foot-links" data-reveal>
+      <a class="mail" href="mailto:contact@jatayu-aero.com" data-hover>↗ contact@jatayu-aero.com</a>
+      <a href="https://www.linkedin.com/company/jatayu-aero/" target="_blank" rel="noopener" data-hover>↗ LinkedIn — JATAYU Aero</a>
+      <a href="patent.html" data-i18n="ct.patent" data-hover></a>
+      <a href="#flight" data-i18n="ct.top" data-hover></a>
+    </div>
+  </div>
+  <div class="giant" aria-hidden="true"><img src="brand/mark-640.png" alt=""><span>JATAYU</span></div>
+  <div class="foot-meta">
+    <span data-i18n="ft.copy"></span>
+    <span><a href="impressum.html">Impressum</a> · <a href="datenschutz.html" data-i18n="ft.privacy"></a> · <a href="patent.html" data-i18n="ft.patent"></a></span>
+  </div>
+</footer>
+
+
+<!-- ============ LIBRARIES — served locally from vendor/; CDN fallback only if a file is missing ============ -->
+<script src="vendor/gsap.min.js"></script>
+<script>window.gsap||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>')</script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script>window.ScrollTrigger||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"><\/script>')</script>
+<script src="vendor/lenis.min.js"></script>
+<script>window.Lenis||document.write('<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"><\/script>')</script>
+
+<script type="module">
+/* ============================================================
+   JATAYU AERO — MAIN SCRIPT
+   STEP 1  i18n: EN/DE dictionary + language switch
+   STEP 2  preloader
+   STEP 3  smooth scroll (Lenis ⇄ ScrollTrigger)
+   STEP 4  Three.js flight scene: carrier + 4 children + hybrid
+           solar/wind park, all driven by one scroll progress P
+   STEP 5  section reveals + pinned horizontal applications
+   STEP 6  custom cursor
+   ============================================================ */
+const hasGSAP = !!(window.gsap && window.ScrollTrigger);
+if (hasGSAP){ gsap.registerPlugin(ScrollTrigger); document.documentElement.classList.add('js-anim'); }
+else document.documentElement.classList.add('no-anim');
+const reduced  = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = matchMedia('(max-width: 900px)').matches;
+
+/* ---------- STEP 1 · i18n ---------- */
+/* Every element with data-i18n gets innerHTML from this dictionary.
+   Strings may contain <b> / <span class="accent"> markup on purpose. */
+const I18N = {
+en:{
+ 'nav.usecase':'USE CASE','nav.system':'SYSTEM','nav.status':'STATUS','nav.team':'TEAM','nav.contact':'CONTACT',
+ 'hero.eyebrow':'RESEARCH VENTURE · BAVARIA',
+ 'hero.l1':'ONE FLIGHT.','hero.l2':'FOUR MISSIONS.',
+ 'hero.sub':'JATAYU Aero is engineering an airborne <b>Carrier UAV</b> that deploys autonomous <b>Child UAVs in flight</b>, each equipped with dedicated sensors and onboard AI. Natively designed as a modular dual-use platform, our architecture has planned initial field validation with an industry partner in <b>hybrid solar and wind park operations</b>.',
+ 'badge.patent':'PATENT PENDING · DPMA','hero.scroll':'SCROLL TO FLY',
+ 's1.k':'01 / TRANSIT','s1.h':'Take off anywhere. Cruise like a plane.',
+ 's1.p':'The carrier is a blended wing VTOL quadplane that switches to efficient winged flight and carries its child UAVs to the site, saving their batteries for the mission itself.',
+ 's2.k':'02 / RELEASE','s2.h':'Released in flight. Supervised by a human.',
+ 's2.p':'On the operator\'s confirmation or according to the approved mission plan, the child UAVs separate from the carrier, mid-air, right where they are needed.',
+ 's3.k':'03 / INSPECT','s3.h':'Four assets at once. Decided on board.',
+ 's3.p':'Over a hybrid solar and wind park, each child inspects its own asset (thermal hotspots on PV strings, visual checks of rotor blades) and runs <b>collect → infer → act</b> on board. The carrier keeps the link to the ground; the children end the mission at a rally point.',
+ 'rail.1':'TRANSIT','rail.2':'RELEASE','rail.3':'INSPECT',
+ 'lab.0':'PV HOTSPOTS<span class="ls"> · THERMAL</span>','lab.1':'ROTOR BLADES<span class="ls"> · OPTICAL</span>','lab.2':'ROTOR BLADES<span class="ls"> · OPTICAL</span>','lab.3':'PV STRINGS<span class="ls"> · THERMAL</span>',
+ 'mq':'AIRBORNE CARRIER UAV <b>·</b> CHILD UAVS <b>·</b> DUAL-USE UAS PLATFORM <b>·</b> ONBOARD EDGE AI <b>·</b> HUMAN-IN-THE-LOOP <b>·</b> VTOL QUADPLANE <b>·</b> PX4 OPEN STACK <b>·</b>',
+ 'usp.tag':'// WHY JATAYU',
+ 'usp.h':'The range of a fixed wing. The reach of a swarm. <b>The judgement on board.</b>',
+ 'usp.p':'One sortie puts several sensors in several places at once and covers a large area, with a single pilot operating the whole UAV ecosystem. Every aircraft closes its own collect → infer → act loop on board; one operator stays on the loop and confirms what matters.',
+ 'usp.patent':'GERMAN PATENT APPLICATION FILED · DPMA · 2026',
+ 'uc.title':'CENTRAL <span class="accent">USE CASE</span>','uc.tag':'PLANNED INITIAL FIELD VALIDATION',
+ 'uc.h':'Monitoring &amp; inspection of hybrid solar and wind parks',
+ 'uc.p':'Hybrid parks spread PV fields, wind turbines, and grid connections across expansive sites, where assets are traditionally flown individually. JATAYU deploys a single Carrier UAV to launch multiple Child UAVs in parallel. The release sequence is to be validated with a first industry partner, with the goal of significantly reducing time per site.',
+ 'uc.l1h':'PV fields — thermal','uc.l1p':'Hotspots, faulty strings and soiling, located to the module.',
+ 'uc.l2h':'Wind turbines — rotor blades','uc.l2p':'Visual checks for leading-edge erosion and surface damage.',
+ 'uc.l3h':'Grid connection &amp; site','uc.l3p':'Substation, cable routes, fences and access roads in the same sortie.',
+ 'uc.l4h':'Report on landing','uc.l4p':'Findings are classified on board and handed over as a structured report.',
+ 'uc.cap1':'VISUALISATION · NOT TO SCALE','uc.cap2':'1 SORTIE · 4 ASSETS',
+ 'sys.title':'ONE CARRIER. <span class="accent">MANY ROLES.</span>',
+ 'sys.lead':'Child UAVs are modular: individual child UAVs can be configured to carry mission specific payloads on every flight.',
+ 'p1.h':'Situation overview','p1.p':'Day-camera mapping and live imagery for a fast, shared picture of the site.',
+ 'p2.h':'Thermal search','p2.p':'Finds hotspots, people and animals by day, at night and in smoke.',
+ 'p3.h':'Radio relay','p3.p':'Holds position as a communication node where terrain or damaged networks cut the link.',
+ 'p4.h':'Light delivery','p4.p':'Drops a life jacket or a first-aid kit exactly where it is needed - after confirmation.',
+ 'ms.title':'DUAL-USE <span class="accent">APPLICATIONS</span>',
+ 'm1.h':'Civil protection &amp; search','m1.p':'Missing-person searches and flood situations: thermal and overview UAVs cover a wide area in parallel while the carrier keeps the link.',
+ 'm2.h':'Wildfire','m2.p':'Early detection, hotspot mapping and a radio relay for crews working in valleys and forests.',
+ 'm3.h':'Rescue delivery','m3.p':'A life jacket for a swimmer in distress, a first-aid kit for a stranded hiker — while ground teams are still on their way.',
+ 'm5.h':'Maritime &amp; Border surveillance','m5.p':'Long-range patrols over coastal and border sectors: the Carrier UAV bridges transit distances while Child UAVs perform multi-sector ISR and vessel checks—delivering tactical situational awareness before ground or naval units deploy.',
+ 'sh.thermal':'THERMAL SEARCH','sh.overview':'OVERVIEW','sh.relay':'RADIO RELAY','sh.hot':'HOTSPOTS · THERMAL','sh.front':'FIRE FRONT · OVERVIEW',
+ 'sh.drop':'LIFE JACKET DROP','sh.vessel':'VESSEL CHECK · OPTICAL','sh.sector':'SECTOR SEARCH · THERMAL','sh.field':'FIELD SCAN · OPTICAL','sh.water':'WATER STRESS · THERMAL',
+ 'm4.tag':'LATER','m4.h':'Agriculture','m4.p':'Field monitoring on large farms with several plots surveyed in a single sortie.',
+ 'dual':'Dual-use architecture by design, engineered for commercial, civil protection, and defense versatility under strict EU export-control compliance (Regulation (EU) 2021/821).',
+ 'tg.title':'DESIGN <span class="accent">TARGETS</span>',
+ 'tg.sw.k':'Swarm technology','tg.sw.d':'One carrier coordinates several child UAVs that operate simultaneously. Version 1.0 has 2 child UAVs and is designed to scale to the customer requirements.',
+ 'tg.ai.k':'Onboard AI','tg.ai.v':'Edge AI','tg.ai.d':'Detection, classification and decision-making and mission completion on board, even in absence of network connectivity.',
+ 'tg.au.k':'Autonomous decisions','tg.au.v':'Autonomous','tg.au.d':'Each aircraft closes its own collect → infer → act loop and re-plans its task on board; the operator stays on the loop and confirms what matters.',
+ 'tg.mod.k':'Modular payloads','tg.mod.v':'4 profiles','tg.mod.d':'Optical, thermal, radio relay or light delivery or a customised payload configuration on every flight with easy field swap.',
+ 'tg.plan.k':'Mission planning','tg.plan.v':'1 plan','tg.plan.d':'Carrier route, release points and every child\'s task in a single mission plan built on open PX4 / MAVLink standards.',
+ 'tg.w.k':'Weight class','tg.w.v':'<span>1.5-2 kg <em>CHILD</em></span><span>15-20 kg <em>CARRIER</em></span>','tg.w.d':'Take-off mass per aircraft, design target.',
+ 'tg.rg.k':'Range &amp; coverage','tg.rg.v':'Far + wide','tg.rg.d':'The long-range carrier brings the swarm to distant sites; the children then cover several assets or sectors at the same time instead of one after another. Figures follow with the first flight tests.',
+ 'tg.vt.k':'Take-off','tg.vt.d':'VTOL giving launch flexibility, requiring no launcher and winged cruise in between.',
+ 'tg.note':'* Targets for the first prototype — not yet flight-proven.',
+ 'st.title':'WHERE WE <span class="accent">STAND.</span>',
+ 'st.1w':'SEP 2026','st.1h':'Patent application filed','st.1p':'German patent application for the carrier-child release method, filed at the DPMA.',
+ 'st.2w':'TODAY','st.2h':'Concept &amp; simulation','st.2p':'Autonomous flight runs in PX4 software-in-the-loop simulation. No flying hardware yet.',
+ 'st.3w':'PHASE 1','st.3h':'Child UAV prototypes','st.3p':'First child UAVs with the onboard decision loop, tested on the bench and in flight.',
+ 'st.4w':'PHASE 2','st.4h':'Release test rig','st.4p':'Separation proven on the ground before it is tried in the air.',
+ 'st.5w':'PHASE 3','st.5h':'Pilot demonstration','st.5p':'Carrier with at least two children, demonstrated with a first energy-park user.',
+ 'st.reg':'Planned phases depend on funding. No flight permissions are claimed: operations will follow the EU rules for unmanned aircraft systems, UAS for short (Implementing Regulation (EU) 2019/947), expected in the EASA <b>“specific” category</b> with a SORA-based operational authorisation from the Luftfahrt-Bundesamt (LBA).',
+ 'tm.title':'THE <span class="accent">TEAM</span>',
+ 'tm.a.role':'Founder · Technical Lead · Inventor',
+ 'tm.a.p':'Systems architecture, simulation and autonomous flight. Research at Fraunhofer ITWM, Université de Liège and CentraleSupélec; industry experience at Bosch and Open Engineering. Inventor of the carrier–child system.',
+ 'tm.u.role':'Team Member · Business Development &amp; Technical Support',
+ 'tm.u.p':'Business development, regulatory compliance and AI data regulation, plus flight testing. Background in life-cycle assessment and sustainability analysis for industry clients.',
+ 'ct.h':'SHAPE THE <span class="accent">FIRST MISSION.</span>',
+ 'ct.p':'Energy park operators, public safety agencies, industrial inspection providers, and defense partners: reach out to validate high-impact airborne deployment in your operations.',
+ 'ct.top':'↑ Back to top','ct.patent':'↗ About our patent application',
+ 'ft.copy':'© 2026 JATAYU Aero · Pre-incorporation research venture · Hof, Bavaria','ft.privacy':'Privacy','ft.patent':'Patent',
+ '_title':'JATAYU Aero - One flight. Four missions.'
+},
+de:{
+ 'nav.usecase':'ANWENDUNG','nav.system':'SYSTEM','nav.status':'STATUS','nav.team':'TEAM','nav.contact':'KONTAKT',
+ 'hero.eyebrow':'FORSCHUNGSVORHABEN · BAYERN',
+ 'hero.l1':'EIN FLUG.','hero.l2':'VIER MISSIONEN.',
+ 'hero.sub':'JATAYU Aero entwickelt ein fliegendes <b>Träger-UAV</b>, das zum Einsatzort fliegt und dort <b>Tochter-UAVs im Flug</b>, aussetzt jedes mit eigener Aufgabe, eigener Sensorik und KI an Bord. Als modulare Dual-Use-Plattform konzipiert, bereitet unser System die Felderprobung mit einem ersten Industriepartner in <b>hybriden Solar- und Windparks</b> vor.', 'badge.patent':'PATENT ANGEMELDET · DPMA','hero.scroll':'SCROLLEN ZUM FLIEGEN',
+ 's1.k':'01 / ANFLUG','s1.h':'Überall starten. Fliegen wie ein Flugzeug.',
+ 's1.p':'Das Träger-UAV ist ein VTOL-Quadplane, das keine Start- und Landebahn benötigt, in den effizienten Starrflügelflug übergeht und das Tochter-UAVs zum Einsatzort transportiert. So werden deren Akkus für die eigentliche Mission geschont.',
+ 's2.k':'02 / AUSSETZEN','s2.h':'Im Flug ausgesetzt. Vom Menschen beaufsichtigt.',
+ 's2.p':'Nach Freigabe durch die Bedienperson oder gemäß dem freigegebenen Missionsplan lösen sich die Tochter-UAVs im Flug vom Träger-UAV - genau dort, wo sie gebraucht werden.',
+ 's3.k':'03 / INSPIZIEREN','s3.h':'Vier Anlagen zugleich. An Bord entschieden.',
+ 's3.p':'Über einem hybriden Solar- und Windpark prüft jedes Tochter-UAV seine eigene Anlage (Hotspots auf PV-Strings, Sichtprüfung der Rotorblätter) und arbeitet <b>erfassen → auswerten → handeln</b> an Bord ab. Das Träger-UAV hält die Verbindung zum Boden; die Tochter-UAVs landen an einem Sammelpunkt.',
+ 'rail.1':'ANFLUG','rail.2':'AUSSETZEN','rail.3':'INSPEKTION',
+ 'lab.0':'PV-HOTSPOTS<span class="ls"> · WÄRMEBILD</span>','lab.1':'ROTORBLÄTTER<span class="ls"> · OPTISCH</span>','lab.2':'ROTORBLÄTTER<span class="ls"> · OPTISCH</span>','lab.3':'PV-STRINGS<span class="ls"> · WÄRMEBILD</span>',
+ 'mq':'TRÄGER-UAV <b>·</b> TOCHTER-UAVS <b>·</b> DUAL-USE UAS-PLATTFORM <b>·</b> EDGE-KI AN BORD <b>·</b> HUMAN-IN-THE-LOOP <b>·</b> VTOL QUADPLANE <b>·</b> PX4 OPEN STACK <b>·</b>',
+ 'usp.tag':'// WARUM JATAYU',
+ 'usp.h':'Die Reichweite eines Flächenfliegers. Die Abdeckung eines Schwarms. <b>Die Entscheidung an Bord.</b>',
+ 'usp.p':'Ein einziger Einsatz bringt mehrere Sensoren an verschiedenen Orten aus, wodurch ein großes Gebiet auf einen Schlag abgedeckt wird, gesteuert von einem einzelnen Piloten, der das UAV-Ökosystem bedient. Jedes Fluggerät schließt seinen Kreislauf erfassen → auswerten → handeln an Bord; eine Person behält die Aufsicht und gibt das Wesentliche frei.',
+ 'usp.patent':'DEUTSCHE PATENTANMELDUNG EINGEREICHT · DPMA · 2026',
+ 'uc.title':'ZENTRALER <span class="accent">ANWENDUNGSFALL</span>','uc.tag':'GEPLANTE FELDERPROBUNG',
+ 'uc.h':'Überwachung &amp; Inspektion hybrider Solar- und Windparks',
+ 'uc.p':'Hybrid-Energieparks verteilen Photovoltaikanlagen, Windkraftanlagen und Netzanschlüsse über weitläufige Flächen. JATAYU nutzt ein Träger-UAV, die mehrere Tochter-UAVs gleichzeitig aussetzt. Der Aussetzablauf soll gemeinsam mit einem ersten industriellen Pilotpartner validiert werden mit dem Ziel, die Inspektionszeit pro Standort deutlich zu verkürzen.',
+ 'uc.l1h':'PV-Felder – Wärmebild','uc.l1p':'Hotspots, defekte Strings und Verschmutzung, verortet bis zum Modul.',
+ 'uc.l2h':'Windenergieanlagen – Rotorblätter','uc.l2p':'Sichtprüfung auf Vorderkantenerosion und Oberflächenschäden.',
+ 'uc.l3h':'Netzanschluss &amp; Gelände','uc.l3p':'Umspannwerk, Kabeltrassen, Zäune und Zufahrten im selben Einsatzflug.',
+ 'uc.l4h':'Bericht bei der Landung','uc.l4p':'Befunde werden an Bord klassifiziert und als strukturierter Bericht übergeben.',
+ 'uc.cap1':'VISUALISIERUNG · NICHT MASSSTÄBLICH','uc.cap2':'1 EINSATZFLUG · 4 ANLAGEN',
+ 'sys.title':'EIN TRÄGER. <span class="accent">VIELE ROLLEN.</span>',
+ 'sys.lead':'Die Tochter-UAVs sind modular aufgebaut: Jedes führt das für die jeweilige Mission erforderliche Profil mit sich, das für jeden Flug frei konfigurierbar ist.',
+ 'p1.h':'Lagebild','p1.p':'Tageslichtkamera für Kartierung und Livebild, ein schnelles, gemeinsames Bild des Geländes.',
+ 'p2.h':'Wärmebildsuche','p2.p':'Findet Hotspots, Personen und Tiere bei Tag, bei Nacht und im Rauch.',
+ 'p3.h':'Funkrelais','p3.p':'Hält Position als Kommunikationsknoten, wo Gelände oder beschädigte Netze die Verbindung kappen.',
+ 'p4.h':'Leichte Zustellung','p4.p':'Bringt Rettungsweste oder Erste-Hilfe-Set genau dorthin, wo sie gebraucht werden - nach Freigabe.',
+ 'ms.title':'DUAL-USE-<span class="accent">ANWENDUNGEN.</span>',
+ 'm1.h':'Bevölkerungsschutz &amp; Suche','m1.p':'Vermisstensuche und Hochwasserlagen: Wärmebild- und Lagebild-UAVs decken parallel eine große Fläche ab, das Träger-UAV hält die Verbindung.',
+ 'm2.h':'Wald- &amp; Vegetationsbrand','m2.p':'Früherkennung, Kartierung von Glutnestern und Funkrelais für Einsatzkräfte in Tälern und Wäldern.',
+ 'm3.h':'Rettungs-Zustellung','m3.p':'Eine Rettungsweste für eine Person in Not im Wasser, ein Erste-Hilfe-Set für Gestrandete während die Bodenkräfte noch unterwegs sind.',
+ 'm5.h':'Maritime &amp; Grenzüberwachung','m5.p':'Umfassende Patrouillen in Küsten- und Grenzgebieten: Das Träger-UAV legt die Distanz zurück, während Tochter-UAVs gezielte Aufklärung (ISR) sowie Schiffsinspektionen durchführen und so ein taktisches Lagebild liefern, bevor Einsatzkräfte entsandt werden.',
+ 'sh.thermal':'WÄRMEBILDSUCHE','sh.overview':'LAGEBILD','sh.relay':'FUNKRELAIS','sh.hot':'GLUTNESTER · WÄRMEBILD','sh.front':'FEUERFRONT · LAGEBILD',
+ 'sh.drop':'RETTUNGSWESTE · ABWURF','sh.vessel':'SCHIFFSKONTROLLE · OPTISCH','sh.sector':'SEKTORSUCHE · WÄRMEBILD','sh.field':'FELDSCAN · OPTISCH','sh.water':'WASSERSTRESS · WÄRMEBILD',
+ 'm4.tag':'SPÄTER','m4.h':'Landwirtschaft','m4.p':'Feldüberwachung auf großen Betrieben – mehrere Schläge in einem einzigen Einsatzflug.',
+ 'dual':'„Dual-Use“ Architektur von Grund auf: konzipiert für zivile Infrastruktur, Bevölkerungsschutz sowie sicherheitsrelevante Aufgaben, im Einklang mit den EU-Exportkontrollbestimmungen (Verordnung (EU) 2021/821).',
+ 'tg.title':'AUSLEGUNGS<span class="accent">ZIELE</span>',
+ 'tg.sw.k':'Schwarmtechnologie','tg.sw.d':'Ein Träger-UAV koordiniert mehrere Tochter-UAVs, die gleichzeitig im Einsatz sind. Version 1.0 umfasst zwei Tochter-UAVs und ist so konzipiert, dass sie sich an die Anforderungen des Kunden anpassen lässt.',
+ 'tg.ai.k':'KI an Bord','tg.ai.v':'Edge-KI','tg.ai.d':'Erkennung, Klassifizierung, Entscheidungsfindung und Missionserfüllung direkt an Bord, selbst bei fehlender Netzwerkverbindung.',
+ 'tg.au.k':'Autonome Entscheidungen','tg.au.v':'Autonom','tg.au.d':'Jedes Fluggerät schließt seinen Kreislauf erfassen → auswerten → handeln an Bord und passt seine Aufgabe selbst an; die Bedienperson behält die Aufsicht und gibt das Wesentliche frei.',
+ 'tg.mod.k':'Modulare Nutzlasten','tg.mod.v':'4 Profile','tg.mod.d':'Optische Sensoren, Wärmebildtechnik, Funkrelais, Transportvorrichtungen für leichte Lasten oder eine individuell angepasste Nutzlastkonfiguration – all dies ist bei jedem Flug möglich und lässt sich vor Ort einfach austauschen.',
+ 'tg.plan.k':'Missionsplanung','tg.plan.v':'1 Plan','tg.plan.d':'Route des Träger-UAV, Aussetzpunkte und die Aufgaben aller Tochter-UAVs in einem Missionsplan auf Basis der offenen Standards PX4 / MAVLink.',
+ 'tg.w.k':'Gewichtsklasse','tg.w.v':'<span>1,5–2 kg <em>TOCHTER</em></span><span>15–20 kg <em>TRÄGER</em></span>','tg.w.d':'Abflugmasse je Fluggerät, Auslegungsziel.',
+ 'tg.rg.k':'Reichweite &amp; Abdeckung','tg.rg.v':'Weit + breit','tg.rg.d':'Das Träger-UAV bringt den Schwarm über große Distanzen zum Einsatzort; dort decken die Tochter-UAVs mehrere Anlagen oder Sektoren gleichzeitig ab statt nacheinander. Zahlen folgen mit den ersten Flugtests.',
+ 'tg.vt.k':'Start','tg.vt.d':'VTOL bietet Flexibilität beim Start, macht keine Startvorrichtung erforderlich und ermöglicht einen Flug mit Tragflächen in der Reisephase.',
+ 'tg.note':'* Ziele für den ersten Prototyp - noch nicht im Flug nachgewiesen.',
+ 'st.title':'WO WIR <span class="accent">STEHEN.</span>',
+ 'st.1w':'SEP 2026','st.1h':'Patent angemeldet','st.1p':'Deutsche Patentanmeldung für das Verfahren zum Aussetzen der Tochter-UAVs, eingereicht beim DPMA.',
+ 'st.2w':'HEUTE','st.2h':'Konzept &amp; Simulation','st.2p':'Autonomer Flug läuft in der PX4-Software-in-the-Loop-Simulation. Noch keine flugfähige Hardware.',
+ 'st.3w':'PHASE 1','st.3h':'Prototypen des Tochter-UAV','st.3p':'Erste Tochter-UAVs mit Entscheidungskreislauf an Bord, erprobt am Prüfstand und im Flug.',
+ 'st.4w':'PHASE 2','st.4h':'Prüfstand für das Aussetzen','st.4p':'Die Trennung wird erst am Boden nachgewiesen, bevor sie in der Luft erprobt wird.',
+ 'st.5w':'PHASE 3','st.5h':'Pilotdemonstration','st.5p':'Träger-UAV mit mindestens zwei Tochter-UAVs, vorgeführt mit einem ersten Energiepark-Anwender.',
+ 'st.reg':'Die geplanten Phasen hängen von der Finanzierung ab. Es werden keine Fluggenehmigungen behauptet: Der Betrieb folgt den EU-Regeln für unbemannte Luftfahrzeugsysteme, kurz UAS (Durchführungsverordnung (EU) 2019/947), voraussichtlich in der EASA-Kategorie <b>„speziell“</b> mit einer SORA-basierten Betriebsgenehmigung des Luftfahrt-Bundesamts (LBA).',
+ 'tm.title':'DAS <span class="accent">TEAM</span>',
+ 'tm.a.role':'Gründer · Technische Leitung · Erfinder',
+ 'tm.a.p':'Systemarchitektur, Simulation und autonomer Flug. Forschung am Fraunhofer ITWM, an der Université de Liège und der CentraleSupélec; Industrieerfahrung bei Bosch und Open Engineering. Erfinder des Träger-Tochter-Systems.',
+ 'tm.u.role':'Teammitglied · Geschäftsentwicklung &amp; technische Unterstützung',
+ 'tm.u.p':'Geschäftsentwicklung, regulatorische Compliance und KI-Datenregulierung sowie Flugerprobung. Hintergrund in Ökobilanzierung und Nachhaltigkeitsanalyse für Industriekunden.',
+ 'ct.h':'GESTALTEN SIE DEN <span class="accent">ERSTEN EINSATZ.</span>',
+ 'ct.p':'Energieparkbetreiber, Behörden und Organisationen mit Sicherheitsaufgaben (BOS), Inspektionsdienstleister und Verteidigungspartner: Kontaktieren Sie uns zur Erprobung hochgradig automatisierter Luftsysteme.',
+ 'ct.top':'↑ Nach oben','ct.patent':'↗ Zu unserer Patentanmeldung',
+ 'ft.copy':'© 2026 JATAYU Aero · Forschungsvorhaben vor der Gründung · Hof, Bayern','ft.privacy':'Datenschutz','ft.patent':'Patent',
+ '_title':'JATAYU Aero - Ein Flug. Vier Missionen.'
+}};
+
+let lang = 'en';
+function applyLang(l){
+  lang = (l === 'de') ? 'de' : 'en';
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = d._title;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = d[el.dataset.i18n]; if (v !== undefined) el.innerHTML = v; });
+  document.getElementById('mq').innerHTML = `<span>${d.mq}</span><span>${d.mq}</span>`;   // doubled → seamless loop
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  try { localStorage.setItem('jatayu-lang', lang); } catch(e){}   // remembers the choice only (no tracking)
+  if (window.__jatayuShots) window.__jatayuShots();                 // scenario pictures: labels in the new language
+  if (hasGSAP) ScrollTrigger.refresh();                             // text widths changed → recompute pins
+}
+let saved = null; try { saved = localStorage.getItem('jatayu-lang'); } catch(e){}
+applyLang(saved || ((navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en'));
+document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+
+/* ---------- STEP 2 · PRELOADER ---------- */
+function runPreloader(done){
+  const pre = document.getElementById('preloader');
+  if (reduced || !hasGSAP){ pre.remove(); done(); return; }
+  const count = document.getElementById('pre-count');
+  gsap.timeline({ onComplete(){ pre.remove(); done(); } })
+    .to('#preloader img', { opacity: 1, scale: 1, duration: .7, ease: 'power3.out' })
+    .to('#pre-bar i', { scaleX: 1, duration: 1.0, ease: 'power2.inOut',
+        onUpdate(){ count.textContent = String(Math.round(this.progress()*100)).padStart(2,'0'); } }, '<.1')
+    .to('#preloader', { yPercent: -100, duration: .7, ease: 'power3.inOut', delay: .1 })
+    .from('#topbar', { y: -30, opacity: 0, duration: .6, ease: 'power2.out' }, '<.3');
+}
+
+/* ---------- STEP 3 · SMOOTH SCROLL ---------- */
+let lenis = null;
+if (hasGSAP && !reduced && window.Lenis){
+  lenis = new Lenis({ lerp: .11, smoothWheel: true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+}
+
+/* ---------- STEP 4 · THREE.JS FLIGHT SCENE ---------- */
+/* Load three.js from vendor/ first; fall back to the CDN (e.g. when the page is
+   opened from file://, where browsers block local ES-module imports). */
+let THREE = null;
+try { THREE = await import('./vendor/three.module.min.js'); }
+catch(e){ try { THREE = await import('https://unpkg.com/three@0.160.0/build/three.module.min.js'); } catch(e2){ THREE = null; } }
+
+const S = { ok:false, P:0, targetP:0, running:false };   // shared scene state
+const stageEl = document.getElementById('stage');
+
+// small math helpers
+const clamp = (x,a=0,b=1) => Math.min(b, Math.max(a, x));
+const sstep = (a,b,x) => { const t = clamp((x-a)/(b-a)); return t*t*(3-2*t); };
+const win   = (x,a,b,f=.03) => sstep(a, a+f, x) * (1 - sstep(b-f, b, x));   // fade-in / fade-out window
+const ease  = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+
+if (THREE){ try { buildScene(); S.ok = true; } catch(err){ console.warn('3D scene failed', err); } }
+if (!S.ok){ stageEl.classList.add('no-webgl'); document.documentElement.classList.add('no-shots'); }
+
+function buildScene(){
+  const wrap = document.getElementById('webgl');
+  const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.5 : 1.75));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  wrap.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x0d0d0d, 20, 58);
+  const camera = new THREE.PerspectiveCamera(42, 1, .1, 200);
+
+  /* ============================================================
+     ENVIRONMENT MAP — gives the white aircraft their blue reflections.
+     A tiny "studio" scene (dark sky, electric-blue horizon band,
+     white + blue softboxes) is pre-filtered once by PMREM and used
+     as scene.environment by every physical material.
+     ============================================================ */
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  const gcv = document.createElement('canvas'); gcv.width = 8; gcv.height = 256;
+  const gctx = gcv.getContext('2d'), grd = gctx.createLinearGradient(0, 0, 0, 256);
+  grd.addColorStop(0, '#1d2c5c'); grd.addColorStop(.40, '#0b1331'); grd.addColorStop(.50, '#2f63ff');
+  grd.addColorStop(.56, '#0a0f22'); grd.addColorStop(1, '#050608');
+  gctx.fillStyle = grd; gctx.fillRect(0, 0, 8, 256);
+  const skyTex = new THREE.CanvasTexture(gcv); skyTex.colorSpace = THREE.SRGBColorSpace;
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide })));
+  const softbox = (w, h, hex, k, p) => {                 // emissive panels = highlights in the reflections
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(...p); m.lookAt(0, 0, 0); envScene.add(m);
+  };
+  softbox(34, 12, 0xffffff, 2.2, [0, 42, 8]);            // big white key from above
+  softbox(46, 4,  0x2f63ff, 3.0, [-38, 6, -18]);         // electric-blue strip, left/back
+  softbox(46, 4,  0x5b86ff, 2.5, [38, 4, 22]);           // electric-blue strip, right/front
+  softbox(18, 7,  0xdfe8ff, 1.4, [22, 24, 30]);          // soft fill
+  scene.environment = pmrem.fromScene(envScene, .03).texture;
+
+  /* lights: soft sky fill + white key + electric-blue rim */
+  scene.add(new THREE.HemisphereLight(0x9cb8ff, 0x0d0d0d, .45));
+  const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(6, 10, 8); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x3d72ff, 2.6); rim.position.set(-8, 4, -10); scene.add(rim);
+
+  /* ============================================================
+     MATERIALS — colours and finish.
+     white = aircraft shell (glossy white, clear-coat → blue reflections)
+     carbon = arms/booms · blade = propellers · led = blue light strips
+     ============================================================ */
+  const M = {
+    white:  new THREE.MeshPhysicalMaterial({ color: 0xf1f4f8, metalness: .12, roughness: .3, clearcoat: 1, clearcoatRoughness: .1, envMapIntensity: 1.25, side: THREE.DoubleSide }),
+    carbon: new THREE.MeshPhysicalMaterial({ color: 0x2c313b, metalness: .4,  roughness: .38, clearcoat: .6, clearcoatRoughness: .3 }),
+    alu:    new THREE.MeshStandardMaterial({ color: 0xb9c4ce, metalness: .9,  roughness: .25 }),
+    blade:  new THREE.MeshStandardMaterial({ color: 0x15171d, metalness: .2,  roughness: .55 }),
+    led:    new THREE.MeshBasicMaterial({ color: 0x5b86ff }),
+    edge:   new THREE.LineBasicMaterial({ color: 0x5b86ff, transparent: true, opacity: .45 }),
+    tower:  new THREE.MeshPhysicalMaterial({ color: 0xeef1f4, metalness: .05, roughness: .42, clearcoat: .4 }),
+    dark:   new THREE.MeshStandardMaterial({ color: 0x1a1d24, metalness: .3,  roughness: .6 }),
+  };
+  M.shell = M.white;                                     // child UAV bodies share the white finish
+  const addEdges = (mesh, thr = 30) => mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, thr), M.edge));
+  const box = (w,h,d,mat) => new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+
+  /* rotor = spinning blades + translucent "blur disc"; each rotor owns its disc material */
+  function makeRotor(r){
+    const grp = new THREE.Group(), blades = new THREE.Group();
+    const bl = box(r*2, .012, r*.12, M.blade); blades.add(bl);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(r*.09, r*.09, .03, 12), M.alu); blades.add(hub);
+    grp.add(blades);
+    const discMat = new THREE.MeshBasicMaterial({ color: 0x7da2ff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 40), discMat); disc.rotation.x = -Math.PI/2; grp.add(disc);
+    return { grp, blades, discMat, speed: 0, target: 0 };
+  }
+  const allRotors = [];
+
+  /* ============================================================
+     CARRIER — blended wing body (BWB), modelled after the CAD design.
+     Forward = +x, span along z, up = +y. Built as one smooth parametric
+     surface: for every span station z we take the leading-edge position
+     from the traced planform, a straight trailing edge, and an airfoil
+     thickness that swells into the central body hump.
+     ============================================================ */
+  const carrier = new THREE.Group();
+  const SPAN = 3.4;                       // half-span (scene units)
+  const X_TE = -1.97;                     // straight trailing edge across the whole span (top view)
+  // leading edge traced from the top view: [|z|, x]  (rounded nose → body shoulder → swept outer wing → tip)
+  const LEP = [[0,1.97],[.22,1.93],[.40,1.80],[.55,1.62],[.66,1.40],[.76,1.18],[.82,.97],[.86,.78],[.90,.62],[1.0,.50],[1.19,.31],[3.4,-1.72]];
+  const xLE = az => { for (let i = 1; i < LEP.length; i++) if (az <= LEP[i][0]) {
+      const [z0,x0] = LEP[i-1], [z1,x1] = LEP[i]; return x0 + (x1-x0)*(az-z0)/(z1-z0); } return LEP[LEP.length-1][1]; };
+  const bodyW = az => 1 - sstep(.62, 1.15, az);                       // 1 inside the body, 0 on the outer wing
+  const thick = az => .05 + .07*(1 - az/SPAN) + .46*bodyW(az);        // max thickness per station
+  const upFrac = az => .5 + .22*bodyW(az);                            // body bulges upward, belly stays flatter
+  const naca = u => 2.969*Math.sqrt(u) - 1.26*u - 3.516*u*u + 2.843*u*u*u - 1.036*u*u*u*u;   // closed-TE NACA shape, max 1 at u≈0.3
+  const surfY = (az, u, top) => { const t = thick(az) * naca(u), f = upFrac(az); return top ? t*f : -t*(1-f); };
+
+  (function buildBWB(){
+    const NS = 110, NC = 64, pos = [], idx = [];
+    for (let i = 0; i <= NS; i++){
+      const s = i/NS*2 - 1, z = Math.sign(s) * SPAN * Math.pow(Math.abs(s), 1.6);   // stations denser near the body
+      const az = Math.abs(z), xl = xLE(az), c = xl - X_TE;
+      for (let j = 0; j <= NC; j++){
+        const v = j/NC, a = Math.abs(1 - 2*v), u = (1 - Math.cos(a*Math.PI)) / 2;   // wraps bottom TE → LE → top TE (cosine spacing)
+        pos.push(xl - u*c, surfY(az, u, v >= .5), z);
+      }
+    }
+    for (let i = 0; i < NS; i++) for (let j = 0; j < NC; j++){
+      const a = i*(NC+1) + j, b = a + NC + 1; idx.push(a, b, a+1, b, b+1, a+1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    carrier.add(new THREE.Mesh(g, M.white));
+    // panel lines like the CAD: body/fairing and fairing/wing junctions, plus a transverse hatch line
+    [-1.19, -.88, .88, 1.19].forEach(z => {
+      const az = Math.abs(z), xl = xLE(az), c = xl - X_TE, pts = [];
+      for (let k = 0; k <= 40; k++){ const u = k/40; pts.push(new THREE.Vector3(xl - u*c, surfY(az, u, true) + .004, z)); }
+      carrier.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), M.edge));
+    });
+    const hatch = []; const hx = .15;
+    for (let k = 0; k <= 30; k++){ const z = -.88 + 1.76*k/30, az = Math.abs(z), u = (xLE(az) - hx) / (xLE(az) - X_TE);
+      hatch.push(new THREE.Vector3(hx, surfY(az, u, true) + .004, z)); }
+    carrier.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(hatch), M.edge));
+  })();
+  // sensor lens in the nose + wingtip LEDs + belly light strip
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(.065, 24), M.led);
+  lens.position.set(1.975, -.04, 0); lens.rotation.y = Math.PI/2; carrier.add(lens);
+  [-1, 1].forEach(sd => { const tip = box(.16, .02, .03, M.led); tip.position.set(-1.8, .005, sd*3.36); carrier.add(tip); });
+  const strip = box(1.1, .015, .04, M.led); strip.position.set(.35, -.165, 0); carrier.add(strip);
+  // booms under the wing with 4 lift rotors (fore rotor ahead of the LE, aft rotor behind the TE)
+  const liftRotors = [];
+  [-1.9, 1.9].forEach(z => {
+    const boom = box(3.5, .06, .06, M.carbon); boom.position.set(-.92, -.07, z); carrier.add(boom);
+    [.82, -2.62].forEach(x => {
+      const pod = new THREE.Mesh(new THREE.CylinderGeometry(.065, .075, .16, 16), M.carbon); pod.position.set(x, .01, z); carrier.add(pod);
+      const r = makeRotor(.55); r.grp.position.set(x, .1, z); carrier.add(r.grp); liftRotors.push(r); allRotors.push(r);
+    });
+  });
+  // rear pusher with spinner on the centre-line trailing edge
+  const spinner = new THREE.Mesh(new THREE.ConeGeometry(.06, .16, 16), M.alu); spinner.rotation.z = Math.PI/2; spinner.position.set(-2.06, 0, 0); carrier.add(spinner);
+  const pusher = makeRotor(.42); pusher.grp.position.set(-2.1, 0, 0); pusher.grp.rotation.z = Math.PI/2;
+  carrier.add(pusher.grp); allRotors.push(pusher);
+  scene.add(carrier);
+  const CARRIER_Y = 4.6;
+  const STORY_SCALE = 0.8;                              // size of carrier + children in RELEASE and INSPECT (1 = hero size)
+
+  /* ============================================================
+     HYBRID PARK — 2 PV fields + 2 wind turbines (finished-product look)
+     ============================================================ */
+  const GROUND = -.85;                                   // park ground level (sits just above the dotted terrain)
+  const park = new THREE.Group(); scene.add(park);
+
+  // PV module texture: 6 × 10 cells, busbars, silver frame — drawn once on a canvas
+  const pvTex = (() => {
+    const cv = document.createElement('canvas'); cv.width = 192; cv.height = 320; const g = cv.getContext('2d');
+    g.fillStyle = '#c9d2da'; g.fillRect(0, 0, 192, 320);                     // aluminium frame
+    const cw = 30, ch = 30.4;
+    for (let r = 0; r < 10; r++) for (let c = 0; c < 6; c++){
+      const x = 6 + c*cw, y = 6 + r*ch, gr = g.createLinearGradient(x, y, x+cw, y+ch);
+      gr.addColorStop(0, '#0d2266'); gr.addColorStop(1, '#081644'); g.fillStyle = gr; g.fillRect(x+.8, y+.8, cw-1.6, ch-1.6);
+      g.strokeStyle = 'rgba(170,190,220,.35)'; g.lineWidth = .7;                // busbars
+      g.beginPath(); g.moveTo(x+cw*.33, y+1); g.lineTo(x+cw*.33, y+ch-1); g.moveTo(x+cw*.66, y+1); g.lineTo(x+cw*.66, y+ch-1); g.stroke();
+    }
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+  })();
+  const pvMat = new THREE.MeshPhysicalMaterial({ map: pvTex, metalness: .35, roughness: .22, clearcoat: 1, clearcoatRoughness: .05, envMapIntensity: 1.3 });
+
+  function pvField(cx, cz){
+    const ROWS = 4, MODS = 9, MW = .46, MH = .31, TILT = .45;      // 4 rows × (9 modules wide × 2 high)
+    const W = MODS*MW, Dp = 2*MH, PITCH = 1.0;
+    const f = new THREE.Group(); f.position.set(cx, 0, cz); park.add(f);
+    // gravel pad (semi-transparent so the blue dotted ground still shows)
+    const pad = new THREE.Mesh(new THREE.PlaneGeometry(W + 1.1, ROWS*PITCH + .9),
+      new THREE.MeshStandardMaterial({ color: 0x1a1e26, roughness: .95, transparent: true, opacity: .72, depthWrite: false }));
+    pad.rotation.x = -Math.PI/2; pad.position.y = GROUND + .005; f.add(pad);
+    const tex = pvTex.clone(); tex.repeat.set(MODS, 2); tex.needsUpdate = true;
+    const mat = pvMat.clone(); mat.map = tex;
+    const posts = [];
+    for (let r = 0; r < ROWS; r++){
+      const z = (r - (ROWS-1)/2) * PITCH, yc = GROUND + .38;
+      const table = new THREE.Mesh(new THREE.BoxGeometry(W, .025, Dp), mat);
+      table.position.set(0, yc, z); table.rotation.x = TILT; f.add(table);          // faces +z and up
+      const rail = box(W, .03, .03, M.alu); rail.position.set(0, yc - .03, z); rail.rotation.x = TILT; f.add(rail);
+      const dz = Math.cos(TILT)*Dp/2*.8, dy = Math.sin(TILT)*Dp/2*.8;
+      for (let k = 0; k <= 4; k++){ const x = -W/2 + .15 + k*(W - .3)/4;
+        posts.push([x, z + dz, yc - dy], [x, z - dz, yc + dy]); }                     // low front post, tall rear post
+    }
+    const postGeo = new THREE.CylinderGeometry(.016, .016, 1, 6), pim = new THREE.InstancedMesh(postGeo, M.alu, posts.length);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+    posts.forEach(([x, z, top], i) => { const h = top - GROUND; pim.setMatrixAt(i, m4.compose(new THREE.Vector3(x, GROUND + h/2, z), q, new THREE.Vector3(1, h, 1))); });
+    f.add(pim);
+    // inverter / transformer station with a blue status light
+    const inv = box(.42, .3, .26, M.tower); inv.position.set(W/2 + .3, GROUND + .15, ROWS*PITCH/2 + .1); f.add(inv);
+    const door = box(.005, .2, .1, M.dark); door.position.set(W/2 + .51 + .002, GROUND + .12, ROWS*PITCH/2 + .1); f.add(door);
+    const st = box(.03, .03, .03, M.led); st.position.set(W/2 + .3, GROUND + .32, ROWS*PITCH/2 + .1); f.add(st);
+    // perimeter fence: posts + top wire
+    const fw = W/2 + .5, fd = ROWS*PITCH/2 + .4, fp = [];
+    for (let x = -fw; x <= fw + 1e-6; x += .45) fp.push([x, -fd], [x, fd]);
+    for (let z = -fd + .45; z < fd - 1e-6; z += .45) fp.push([-fw, z], [fw, z]);
+    const fim = new THREE.InstancedMesh(new THREE.CylinderGeometry(.01, .01, .22, 5), M.alu, fp.length);
+    fp.forEach(([x, z], i) => fim.setMatrixAt(i, m4.compose(new THREE.Vector3(x, GROUND + .11, z), q, new THREE.Vector3(1,1,1))));
+    f.add(fim);
+    const wire = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-fw,-fd],[fw,-fd],[fw,fd],[-fw,fd]].map(([x,z]) => new THREE.Vector3(x, GROUND + .21, z))),
+      new THREE.LineBasicMaterial({ color: 0x9fb0bd, transparent: true, opacity: .45 }));
+    f.add(wire);
+  }
+  pvField(4.1, 2.7); pvField(-4.0, -2.6);
+
+  /* wind turbine blade: lofted, tapered and twisted airfoil-like section (not a flat box) */
+  function bladeGeo(len){
+    const SEG = 22, RING = 12, pos = [], idx = [];
+    for (let i = 0; i <= SEG; i++){
+      const t = i/SEG, r = .12 + t*(len - .12);
+      const chord = t < .18 ? .08 + (.19 - .08)*(t/.18) : .19 - (.19 - .028)*Math.pow((t - .18)/.82, .85);
+      const th = chord * (t < .12 ? .85 - 4.5*t : .22);                // round root → thin airfoil
+      const tw = (1 - t) * .38;                                        // twist, more at the root
+      for (let k = 0; k < RING; k++){
+        const a = k/RING*Math.PI*2;
+        let cz = Math.cos(a)*chord/2 + chord*.12, cx = Math.sin(a)*th/2 * (Math.cos(a) > 0 ? .7 : 1.15);   // blunt LE, sharp TE
+        const x = cx*Math.cos(tw) - cz*Math.sin(tw), z = cx*Math.sin(tw) + cz*Math.cos(tw);
+        pos.push(x, r, z);
+      }
+    }
+    for (let i = 0; i < SEG; i++) for (let k = 0; k < RING; k++){
+      const a = i*RING + k, b = i*RING + (k+1)%RING, c = a + RING, d = b + RING; idx.push(a, c, b, b, c, d);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  }
+  const BLADE = bladeGeo(1.6), bladeMat = M.tower.clone(); bladeMat.side = THREE.DoubleSide;
+  const HUB_Y = GROUND + 3.65;
+  const turbineHubs = [];
+  function turbine(x, z){
+    const t = new THREE.Group(); t.position.set(x, GROUND, z);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(.3, .32, .05, 24), M.dark); base.position.y = .025; t.add(base);
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(.055, .125, 3.55, 28), M.tower); tower.position.y = 1.8; t.add(tower);
+    const nac = new THREE.Mesh(new THREE.CapsuleGeometry(.11, .42, 8, 20), M.tower); nac.rotation.z = Math.PI/2; nac.position.set(-.08, 3.65, 0); t.add(nac);
+    const hub = new THREE.Group(); hub.position.set(.26, 3.65, 0); t.add(hub);
+    const spin = new THREE.Mesh(new THREE.SphereGeometry(.12, 24, 16, 0, Math.PI*2, 0, Math.PI/2), M.tower);
+    spin.rotation.z = -Math.PI/2; spin.scale.set(1, 1.5, 1); hub.add(spin);                // nose cone facing +x
+    for (let b = 0; b < 3; b++){ const bl = new THREE.Mesh(BLADE, bladeMat); bl.rotation.x = b * Math.PI*2/3; hub.add(bl); }
+    const beacon = box(.04, .04, .04, M.led); beacon.position.set(-.38, 3.78, 0); t.add(beacon);
+    park.add(t); turbineHubs.push(hub);
+  }
+  turbine(-3.6, 3.6); turbine(3.6, -3.8);
+
+  /* ---- CHILDREN: 4 small X-quads, docked under the belly until release ---- */
+  const DOCK = [[.55,-.30,.42],[.55,-.30,-.42],[-.55,-.30,.42],[-.55,-.30,-.42]].map(a => new THREE.Vector3(...a));
+  // inspection stations (world) + the asset each child looks at
+  const STATION = [[4.1,1.6,2.7],[-2.0,HUB_Y,3.6],[2.0,HUB_Y,-3.8],[-4.0,1.6,-2.6]].map(a => new THREE.Vector3(...a));
+  const LOOKAT  = [[4.1,GROUND+.3,2.7],[-3.5,HUB_Y,3.6],[3.7,HUB_Y,-3.8],[-4.0,GROUND+.3,-2.6]].map(a => new THREE.Vector3(...a));
+  const RELEASE_ORDER = [0, 3, 1, 2];
+  const down = new THREE.Vector3(0,-1,0);
+
+  const children = DOCK.map((d, i) => {
+    const g = new THREE.Group();
+    const cb = box(.3, .09, .2, M.shell); g.add(cb); addEdges(cb);
+    [Math.PI/4, -Math.PI/4].forEach(a => { const arm = box(.78, .035, .05, M.carbon); arm.rotation.y = a; g.add(arm); });
+    const rotors = [];
+    [[.276,.276],[.276,-.276],[-.276,.276],[-.276,-.276]].forEach(([x,z]) => {
+      const r = makeRotor(.17); r.grp.position.set(x, .05, z); g.add(r.grp); rotors.push(r); allRotors.push(r); });
+    const eye = box(.03, .05, .08, M.led); eye.position.set(.16, -.01, 0); g.add(eye);
+    // scan cone: apex at the child, opening toward its asset
+    const coneGeo = new THREE.ConeGeometry(.5, 1, 28, 1, true); coneGeo.translate(0, -.5, 0);   // apex at origin, opens to −y
+    const coneMat = new THREE.MeshBasicMaterial({ color: 0x5b86ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    const cone = new THREE.Mesh(coneGeo, coneMat); cone.visible = false; scene.add(cone);
+    // data link child ↔ carrier
+    const link = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+                                new THREE.LineBasicMaterial({ color: 0x5b86ff, transparent: true, opacity: 0 }));
+    scene.add(link); scene.add(g);
+    return { g, rotors, cone, coneMat, link, dock: d, station: STATION[i], look: LOOKAT[i], order: RELEASE_ORDER.indexOf(i), amt: 0 };
+  });
+
+  /* ---- PARTICLE TERRAIN: the blue dotted wave (no guide lines) ---- */
+  const COLS = isMobile ? 110 : 180, ROWS = isMobile ? 76 : 120, W = 64, D = 44;
+  const pos = new Float32Array(COLS*ROWS*3); let p = 0;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
+    pos[p++] = (c/(COLS-1) - .5)*W; pos[p++] = 0; pos[p++] = (r/(ROWS-1) - .5)*D; }
+  const tGeo = new THREE.BufferGeometry(); tGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const U = {
+    uTime:{value:0}, uOffset:{value:0}, uPx:{value:renderer.getPixelRatio()},
+    uSweep:{value:-30}, uSweepAmt:{value:1}, uFlat:{value:0},
+    uSpots:{value:[0,1,2,3].map(() => new THREE.Vector4())},
+    uBlue:{value:new THREE.Color(0x0044ff)}, uHi:{value:new THREE.Color(0x8fb0ff)}
+  };
+  const tMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: U,
+    vertexShader: `
+      uniform float uTime, uOffset, uPx, uSweep, uSweepAmt, uFlat;
+      uniform vec4 uSpots[4];
+      varying float vGlow; varying float vFade;
+      void main(){
+        vec3 p = position;
+        float gx = p.x;                                     // ground coordinate (travels with the point)
+        p.x = mod(p.x + uOffset + 32.0, 64.0) - 32.0;       // scroll the ground and wrap around
+        float h = sin(gx*.35 + uTime*.6) * cos(p.z*.42 + uTime*.4) * .7 + sin(gx*.12 - uTime*.25) * .5;
+        h *= mix(1.0, .25, uFlat * (1.0 - smoothstep(6.0, 11.0, length(p.xz))));   // calm ground under the park
+        float g = smoothstep(3.2, 0.0, abs(p.x - uSweep)) * uSweepAmt;            // hero scan sweep
+        for (int i = 0; i < 4; i++) g += uSpots[i].z * smoothstep(1.9, 0.0, distance(p.xz, uSpots[i].xy));
+        vGlow = clamp(g, 0.0, 1.0);
+        p.y = h - 1.0 + vGlow * .35;
+        vFade = (1.0 - smoothstep(13.0, 21.0, abs(p.z))) * (1.0 - smoothstep(22.0, 31.0, abs(p.x)));
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = min((1.15 + vGlow * 2.6) * uPx * (10.0 / -mv.z) * 2.2, 14.0);
+      }`,
+    fragmentShader: `
+      uniform vec3 uBlue, uHi; varying float vGlow; varying float vFade;
+      void main(){
+        float a = smoothstep(.5, .12, length(gl_PointCoord - .5));
+        gl_FragColor = vec4(mix(uBlue * .6, uHi, vGlow), a * (.17 + vGlow * .85) * vFade);
+      }`
+  });
+  scene.add(new THREE.Points(tGeo, tMat));
+
+  /* ---- CAMERA KEYFRAMES over scroll progress P ---- */
+  const KEYS = [
+    { p:0.00, pos:[7.8,6.1,11.6], tgt:[0,3.9,0] },   // hero 3/4 view
+    { p:0.12, pos:[7.8,6.1,11.6], tgt:[0,3.9,0] },
+    { p:0.30, pos:[-1.6,5.3,9.4], tgt:[.6,4.2,0] },  // transit chase
+    { p:0.47, pos:[4.4,2.5,7.4],  tgt:[0,3.7,0] },   // under the belly at release
+    { p:0.62, pos:[7.5,5.0,11.0], tgt:[0,2.7,0] },
+    { p:0.82, pos:[.6,15.5,10.6], tgt:[0,.2,-1.4] }, // overview of the park — aimed low so the park sits
+    { p:1.00, pos:[.6,16.5,11.4], tgt:[0,.2,-1.4] }, // in the upper screen, clear of the step text
+  ];
+  const vA = new THREE.Vector3(), vB = new THREE.Vector3(), camPos = new THREE.Vector3(), camTgt = new THREE.Vector3();
+  function camAt(P){
+    let i = 0; while (i < KEYS.length - 2 && P > KEYS[i+1].p) i++;
+    const a = KEYS[i], b = KEYS[i+1], t = ease(clamp((P - a.p) / (b.p - a.p)));
+    camPos.lerpVectors(vA.fromArray(a.pos), vB.fromArray(b.pos), t);
+    camTgt.lerpVectors(vA.fromArray(a.tgt), vB.fromArray(b.tgt), t);
+    if (camera.aspect < 1.2){                              // portrait screens: pull back so the scene fits
+      camPos.sub(camTgt).multiplyScalar(1 + (1.2 - camera.aspect) * 1.05).add(camTgt);
+      const tilt = sstep(.55, .75, P);                     // …and aim nearer/lower during the inspection so the
+      camTgt.y -= 2.2 * tilt; camTgt.z += 4.0 * tilt;      // park rises above the bottom story text
+    } else {                                                 // wide screens: slide the view left so the action
+      const sh = -3.2 * sstep(.40, .52, P);                // sits right of the bottom-left story text
+      camPos.x += sh; camTgt.x += sh;
+    }
+  }
+
+  /* ---- DOM hooks ---- */
+  const heroCopy = document.getElementById('heroCopy');
+  const eyebrow  = heroCopy.querySelector('.eyebrow');      // "RESEARCH VENTURE · HOCHSCHULE HOF · BAVARIA"
+  const pA = new THREE.Vector3(), pB = new THREE.Vector3();
+  /* HERO LIFT: how far (world units) the carrier must rise so it moves up on screen by
+     2 × the eyebrow line height. Measured in pixels each frame → exact on every screen size/language. */
+  function heroLiftWorld(){
+    // hero lift in multiples of the eyebrow line height; separate values for wide and narrow screens
+    const PC_LIFT = 7;        // screens wider than 900 px
+    const PHONE_LIFT = 2;     // phones and small tablets
+    const liftPx = (innerWidth > 900 ? PC_LIFT : PHONE_LIFT) * eyebrow.getBoundingClientRect().height;
+    pA.set(0, CARRIER_Y, 0).project(camera); pB.set(0, CARRIER_Y + 1, 0).project(camera);   // screen shift of 1 world unit
+    const pxPerUnit = Math.abs(pB.y - pA.y) * .5 * wrap.clientHeight;
+    return pxPerUnit > 0 ? liftPx / pxPerUnit : 0;
+  }
+  const steps = [1,2,3].map(n => document.getElementById('step'+n));
+  const rail = document.getElementById('rail'), railItems = [...rail.children];
+  const labels = [...document.querySelectorAll('.lab')];
+  let mx = 0, my = 0;
+  addEventListener('pointermove', e => { mx = e.clientX/innerWidth - .5; my = e.clientY/innerHeight - .5; }, { passive: true });
+
+  function resize(){
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize); resize();
+
+  /* ---- MAIN LOOP ---- */
+  const clock = new THREE.Clock(); let sweepX = -26, sweepDir = 1;
+  const tmp = new THREE.Vector3(), dockW = new THREE.Vector3(), drop = new THREE.Vector3();
+  const SEGS = [[.17,.42],[.44,.66],[.68,.97]];
+  function frame(){
+    const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+    S.P += (S.targetP - S.P) * (reduced ? 1 : .08);      // smooth the scroll progress
+    const P = S.P;
+
+    /* phases derived from P */
+    const heroA  = 1 - sstep(.05, .14, P);
+    const cruise = sstep(.15, .33, P) * (1 - sstep(.40, .52, P));   // fast ground = transit
+    const Dp     = clamp((P - .44) / .22);                          // deployment 0..1
+    const A      = sstep(.64, .74, P);                              // inspection 0..1
+
+    /* terrain + park arrival (the park glides in as the transit slows) */
+    U.uTime.value = t;
+    U.uOffset.value += (0.6 + 7.5 * cruise) * dt;
+    sweepX += sweepDir * .12; if (Math.abs(sweepX) > 26) sweepDir *= -1;
+    U.uSweep.value = sweepX; U.uSweepAmt.value = heroA;
+    U.uFlat.value = sstep(.38, .55, P);
+    park.position.x = 46 * (1 - ease(sstep(.30, .52, P)));
+    park.visible = P > .25;
+    turbineHubs.forEach((h, i) => h.rotation.x += dt * (.6 + i*.15));
+
+    /* carrier: hover in the hero, cruise in transit, gentle loiter while the children work */
+    // heroA fades the lift out as the story starts, so every later phase is unchanged
+    carrier.position.set(0, CARRIER_Y + Math.sin(t*1.1)*.08 + A*.9 + heroA * heroLiftWorld(), 0);
+    const sc = 1 - (1 - STORY_SCALE) * sstep(.40, .50, P);       // shrink smoothly as RELEASE begins
+    carrier.scale.setScalar(sc);
+    carrier.rotation.set(Math.sin(t*.9)*.025, A * Math.sin(t*.25)*.5, Math.sin(t*.7)*.02 - cruise*.04);
+    carrier.updateMatrixWorld();
+    liftRotors.forEach(r => r.target = (P < .2 || P > .64) ? 42 : 0);
+    pusher.target = (P > .14 && P < .64) ? 46 : 0;
+
+    /* children: sequential release → drop → fly to station → inspect */
+    children.forEach((c, i) => {
+      const q = clamp((Dp - c.order * .2) / .4);
+      c.g.scale.setScalar(sc);
+      dockW.copy(c.dock).applyMatrix4(carrier.matrixWorld);
+      if (q <= 0){
+        c.g.position.copy(dockW); c.g.rotation.copy(carrier.rotation);
+      } else if (q < .3){
+        c.g.position.copy(dockW).addScaledVector(down, 1.1 * ease(q / .3)); c.g.rotation.copy(carrier.rotation);
+      } else {
+        const k = ease((q - .3) / .7);
+        drop.copy(dockW).addScaledVector(down, 1.1);
+        c.g.position.lerpVectors(drop, c.station, k);
+        c.g.position.y += Math.sin(k * Math.PI) * .5 + (q >= 1 ? Math.sin(t*1.7 + i)*.05 : 0);
+        c.g.rotation.set(0, Math.atan2(-(c.look.z - c.g.position.z), c.look.x - c.g.position.x) * k, -.25 * Math.sin(k * Math.PI));
+      }
+      c.rotors.forEach(r => r.target = q > .06 ? 60 : 0);
+      c.amt = A * sstep(.85, 1, q);
+      // scan cone toward the asset
+      tmp.subVectors(c.look, c.g.position); const len = Math.max(tmp.length(), .01);
+      c.cone.position.copy(c.g.position); c.cone.quaternion.setFromUnitVectors(down, tmp.normalize());
+      const rad = Math.max(.6, len*.5); c.cone.scale.set(rad, len, rad);
+      c.coneMat.opacity = c.amt * .12; c.cone.visible = c.amt > .01;
+      // link line child ↔ carrier
+      const lp = c.link.geometry.attributes.position;
+      lp.setXYZ(0, carrier.position.x, carrier.position.y - .4, carrier.position.z);
+      lp.setXYZ(1, c.g.position.x, c.g.position.y, c.g.position.z); lp.needsUpdate = true;
+      c.link.material.opacity = c.amt * .55;
+      U.uSpots.value[i].set(c.look.x, c.look.z, c.amt * (c.look.y < 1 ? 1 : .5), 0);   // ground glow under the asset
+    });
+
+    /* rotors: ease toward target speed, show the blur disc when fast */
+    allRotors.forEach(r => {
+      r.speed += (r.target - r.speed) * .05;
+      r.blades.rotation.y += r.speed * dt;
+      r.discMat.opacity = clamp(r.speed / 40) * .16;
+    });
+
+    /* camera + subtle mouse parallax (strongest in the hero) */
+    camAt(P);
+    if (!reduced){ camPos.x += mx * (1.4*heroA + .4); camPos.y += -my * (.9*heroA + .3); }
+    camera.position.copy(camPos); camera.lookAt(camTgt);
+
+    /* overlay text */
+    heroCopy.style.opacity = heroA; heroCopy.style.transform = `translateY(${(1-heroA)*-30}px)`;
+    heroCopy.style.visibility = heroA < .01 ? 'hidden' : 'visible';
+    const sv = [win(P,.17,.42), win(P,.44,.66), win(P,.68,.985,.02)];
+    steps.forEach((s, i) => { s.style.opacity = sv[i]; s.style.transform = `translateY(${(1-sv[i])*26}px)`;
+      s.style.visibility = sv[i] < .01 ? 'hidden' : 'visible'; });
+    rail.style.opacity = sstep(.12, .2, P);
+    railItems.forEach((it, i) => { it.querySelector('b').style.transform = `scaleX(${clamp((P-SEGS[i][0])/(SEGS[i][1]-SEGS[i][0]))})`;
+      it.classList.toggle('on', sv[i] > .5); });
+    /* projected labels above each child */
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    children.forEach((c, i) => {
+      const L = labels[i]; L.style.opacity = c.amt;
+      if (c.amt > .01){ tmp.copy(c.g.position); tmp.y += .35; tmp.project(camera);
+        const lw = L.offsetWidth, lh = L.offsetHeight;          // keep the label fully on screen
+        const lx = clamp((tmp.x*.5+.5)*w - lw/2, 6, w - lw - 6), ly = clamp((-tmp.y*.5+.5)*h - lh*1.3, 64, h - lh - 6);
+        L.style.transform = `translate(${lx}px,${ly}px)`; }
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  /* ============================================================
+     SCENARIO RENDERS — the pictures in "Central use case" and
+     "Beyond energy" are rendered by this same 3D engine, so they
+     share the look of the opening animation. Each scenario is a
+     small diorama (hidden during the animation); it is shown,
+     posed, rendered once to an image, then hidden again.
+     Labels are drawn on top in the current language.
+     ============================================================ */
+  {
+    const rng = (seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; })(20261014);
+    const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const m4 = new THREE.Matrix4(), qI = new THREE.Quaternion(), one = V(1, 1, 1);
+
+    // soft radial glow (heat signatures, fire, status lights)
+    const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+      const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.45)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+    const glow = (hex, size, opacity = 1, additive = true) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: hex, transparent: true, opacity,
+      depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending })); s.scale.set(size, size, 1); return s; };
+
+    const MS = {
+      tree:  new THREE.MeshStandardMaterial({ color: 0x2b3a46, roughness: .75, metalness: .05 }),
+      trunk: new THREE.MeshStandardMaterial({ color: 0x3a3330, roughness: .9 }),
+      water: new THREE.MeshPhysicalMaterial({ color: 0x08173a, roughness: .12, metalness: .2, clearcoat: 1, clearcoatRoughness: .05, envMapIntensity: 1.4 }),
+      land:  new THREE.MeshStandardMaterial({ color: 0x1b2129, roughness: .95 }),
+      flame: new THREE.MeshBasicMaterial({ color: 0xff7a2a }),
+      core:  new THREE.MeshBasicMaterial({ color: 0xffd27a }),
+      ash:   new THREE.MeshStandardMaterial({ color: 0x14100e, roughness: 1 }),
+      buoy:  new THREE.MeshStandardMaterial({ color: 0xff6a2a, roughness: .5 }),
+      roof:  new THREE.MeshStandardMaterial({ color: 0x3a404b, roughness: .6, metalness: .3 }),
+      cargo: new THREE.MeshStandardMaterial({ color: 0x2f5bd6, roughness: .5, metalness: .2 }),
+      path:  new THREE.LineDashedMaterial({ color: 0x5b86ff, dashSize: .18, gapSize: .12, transparent: true, opacity: .85 }),
+    };
+
+    // instanced forest with an optional "keep clear" test
+    function forest(group, n, xr, zr, clear){
+      const pts = [];
+      while (pts.length < n){ const x = xr[0] + rng()*(xr[1]-xr[0]), z = zr[0] + rng()*(zr[1]-zr[0]); if (!clear || !clear(x, z)) pts.push([x, z, .7 + rng()*.6]); }
+      const can = new THREE.InstancedMesh(new THREE.ConeGeometry(.26, .95, 7), MS.tree, n), tr = new THREE.InstancedMesh(new THREE.CylinderGeometry(.04, .05, .3, 5), MS.trunk, n);
+      pts.forEach(([x, z, s], i) => { can.setMatrixAt(i, m4.compose(V(x, GROUND + .3*s + .45*s, z), qI, V(s, s, s)));
+                                      tr.setMatrixAt(i, m4.compose(V(x, GROUND + .15*s, z), qI, V(s, s, s))); });
+      group.add(can, tr);
+    }
+    // dashed search pattern (boustrophedon) over a rectangle
+    function searchPath(group, cx, cz, w, d, legs, y){
+      const p = []; for (let i = 0; i <= legs; i++){ const z = cz - d/2 + d*i/legs, a = i % 2 ? cx + w/2 : cx - w/2, b = i % 2 ? cx - w/2 : cx + w/2; p.push(V(a, y, z), V(b, y, z)); }
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(p), MS.path); l.computeLineDistances(); group.add(l);
+    }
+    function person(group, x, z, swimming){
+      const g = new THREE.Group(); g.position.set(x, GROUND, z);
+      if (!swimming){ const b = new THREE.Mesh(new THREE.CapsuleGeometry(.045, .12, 4, 8), M.white); b.position.y = .11; g.add(b); }
+      const h = new THREE.Mesh(new THREE.SphereGeometry(.045, 12, 8), M.white); h.position.y = swimming ? .05 : .26; g.add(h);
+      const heat = glow(0xffb36b, .9, .9); heat.position.y = .15; g.add(heat);              // thermal signature
+      group.add(g);
+    }
+    function ship(group, x, z, len, rotY, coastGuard){
+      const g = new THREE.Group(); g.position.set(x, GROUND + .02, z); g.rotation.y = rotY; g.scale.setScalar(len / 3.2);
+      const s = new THREE.Shape(); s.moveTo(-1.5, -.3); s.lineTo(1.0, -.3); s.quadraticCurveTo(1.5, -.25, 1.7, 0); s.quadraticCurveTo(1.5, .25, 1.0, .3); s.lineTo(-1.5, .3); s.closePath();
+      const hg = new THREE.ExtrudeGeometry(s, { depth: .32, bevelEnabled: false }); hg.rotateX(-Math.PI/2);
+      g.add(new THREE.Mesh(hg, M.white));
+      const deck = box(2.9, .02, .5, M.dark); deck.position.set(-.1, .33, 0); g.add(deck);
+      const sup = box(.55, .36, .48, M.white); sup.position.set(-1.05, .52, 0); g.add(sup);
+      const win = box(.02, .07, .4, M.dark); win.position.set(-.77, .62, 0); g.add(win);
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .5, 6), M.alu); mast.position.set(-1.05, .95, 0); g.add(mast);
+      if (coastGuard){ const band = box(.9, .06, .62, MS.buoy); band.position.set(.3, .2, 0); g.add(band); }
+      else [-.2, .25, .7].forEach(cx => { const c = box(.4, .22, .42, MS.cargo); c.position.set(cx, .45, 0); g.add(c); });
+      // wake
+      const wk = new THREE.Mesh(new THREE.PlaneGeometry(2.6, .9), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xdfe8ff, transparent: true, opacity: .25, depthWrite: false }));
+      wk.rotation.x = -Math.PI/2; wk.position.set(-2.6, .01, 0); g.add(wk);
+      group.add(g); return g;
+    }
+
+    const SC = {};                                     // scenario dioramas
+    const mk = name => { const g = new THREE.Group(); g.visible = false; scene.add(g); SC[name] = g; return g; };
+
+    // A·01 civil protection & search — forest, a missing person found by thermal
+    { const g = mk('search'); forest(g, 170, [-10, 10], [-6.5, 6.5], (x, z) => Math.hypot(x - 2.4, z - 1.4) < 1.1 || Math.hypot(x + 2.6, z + 1.6) < 1.2);
+      person(g, 2.4, 1.4); searchPath(g, -2.6, -1.6, 3.2, 2.2, 5, GROUND + .06); }
+    // A·02 wildfire — burning patch, smoke, thermal over the hotspots
+    { const g = mk('fire'); forest(g, 170, [-10, 10], [-6.5, 6.5], (x, z) => Math.hypot(x + 1.4, z - .4) < 1.5);
+      const ash = new THREE.Mesh(new THREE.CircleGeometry(1.6, 28), MS.ash); ash.rotation.x = -Math.PI/2; ash.position.set(-1.4, GROUND + .01, .4); g.add(ash);
+      for (let i = 0; i < 26; i++){ const a = rng()*Math.PI*2, r = rng()*1.3, x = -1.4 + Math.cos(a)*r, z = .4 + Math.sin(a)*r, h = .18 + rng()*.35;
+        const f = new THREE.Mesh(new THREE.ConeGeometry(.07 + rng()*.05, h, 6), rng() < .3 ? MS.core : MS.flame); f.position.set(x, GROUND + h/2, z); g.add(f);
+        const gl = glow(0xff6a20, .6 + rng()*.6, .55); gl.position.set(x, GROUND + .2, z); g.add(gl); }
+      for (let i = 0; i < 9; i++){ const sm = glow(0x7a828e, 1.6 + i*.35, .22 - i*.015, false); sm.position.set(-1.4 + i*.28, GROUND + .8 + i*.42, .4 - i*.12); g.add(sm); }
+      const pl = new THREE.PointLight(0xff6a20, 4, 9); pl.position.set(-1.4, GROUND + .8, .4); g.add(pl); }
+    // A·03 rescue delivery — lake, person in the water, life jacket on the way
+    { const g = mk('rescue');
+      const lk = new THREE.Shape(); lk.absellipse(0, 0, 4.6, 3.0, 0, Math.PI*2); const lake = new THREE.Mesh(new THREE.ShapeGeometry(lk, 48), MS.water);
+      lake.rotation.x = -Math.PI/2; lake.position.set(.6, GROUND + .02, .4); g.add(lake);
+      forest(g, 150, [-10, 10], [-6.5, 6.5], (x, z) => ((x - .6)/5.0)**2 + ((z - .4)/3.4)**2 < 1);
+      person(g, 1.3, .9, true);
+      const buoy = new THREE.Mesh(new THREE.TorusGeometry(.12, .035, 10, 24), MS.buoy); buoy.rotation.x = -Math.PI/2; buoy.position.set(1.3, GROUND + .3, .9); g.add(buoy);
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(1.3, GROUND + .33, .9), V(1.3, 1.05, .9)]), M.edge); g.add(line);
+      const ring = glow(0x5b86ff, 1.4, .5); ring.position.set(1.3, GROUND + .05, .9); g.add(ring); }
+    // A·04 maritime surveillance — open sea, coastline, a vessel checked, a sector searched
+    { const g = mk('sea');
+      const sea = new THREE.Mesh(new THREE.PlaneGeometry(80, 60), MS.water); sea.rotation.x = -Math.PI/2; sea.position.y = GROUND + .01; g.add(sea);
+      const land = box(12, .5, 40, MS.land); land.position.set(-14.5, GROUND + .2, 0); g.add(land);
+      const lh = new THREE.Mesh(new THREE.CylinderGeometry(.12, .18, 1.3, 16), M.white); lh.position.set(-8.9, GROUND + .9, -2.2); g.add(lh);
+      const lamp = glow(0xdfe8ff, 1.2, .9); lamp.position.set(-8.9, GROUND + 1.6, -2.2); g.add(lamp);
+      ship(g, 3.4, .6, 3.2, .35, false); ship(g, -6.2, 2.4, 1.4, -.5, true);
+      searchPath(g, -2.2, 3.0, 3.6, 2.4, 6, GROUND + .04); }
+    // A·05 agriculture — parcels with crop rows, a farm, scanning plots
+    { const g = mk('farm');
+      const rows = (base, line, ang) => { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+        x.fillStyle = base; x.fillRect(0, 0, 256, 256); x.strokeStyle = line; x.lineWidth = 3; x.translate(128, 128); x.rotate(ang); x.translate(-200, -200);
+        for (let i = 0; i < 400; i += 9){ x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 400); x.stroke(); }
+        const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+      const P = [[-4.2, -2.4, '#15241b', '#284a33', 0], [.2, -2.4, '#231d15', '#3d3222', Math.PI/2], [4.6, -2.4, '#172a1f', '#2f5539', 0],
+                 [-4.2, 1.6, '#1d2417', '#3a4a2a', Math.PI/2], [.2, 1.6, '#15241b', '#2a4f36', 0], [4.6, 1.6, '#241e16', '#403424', Math.PI/2]];
+      P.forEach(([x, z, b, l, a]) => { const pl = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 3.7), new THREE.MeshStandardMaterial({ map: rows(b, l, a), roughness: .95 }));
+        pl.rotation.x = -Math.PI/2; pl.position.set(x, GROUND + .01, z); g.add(pl); });
+      const barn = box(1.2, .6, .8, M.white); barn.position.set(-8.4, GROUND + .3, -.4); g.add(barn);
+      const rs = new THREE.Shape(); rs.moveTo(-.45, 0); rs.lineTo(.45, 0); rs.lineTo(0, .35); rs.closePath();
+      const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(rs, { depth: 1.25, bevelEnabled: false }), MS.roof); roof.rotation.y = Math.PI/2; roof.position.set(-9.03, GROUND + .6, -.4); g.add(roof);
+      searchPath(g, .2, 1.6, 3.6, 3.0, 7, GROUND + .05); }
+
+    /* scenario definitions: carrier pose, children (position, what they look at, cone on/off), labels, camera */
+    const SHOTS = {
+      core:   { park: true, size: [1280, 1050], cam: [[9.6, 8.6, 11.8], [0, 1.9, 0]], carrier: [[0, CARRIER_Y + .6, -.6], .3],
+                kids: STATION.map((s, i) => ({ p: s.toArray(), look: LOOKAT[i].toArray(), cone: true, lab: 'lab.' + i })) },
+      search: { sc: 'search', cam: [[8.2, 6.4, 10.4], [0, 2.2, .3]], carrier: [[0, 4.6, -1.4], -.4],
+                kids: [{ p: [2.4, 1.6, 1.4], look: [2.4, GROUND, 1.4], cone: true, lab: 'sh.thermal', tag: [73,54] },
+                       { p: [-2.6, 2.1, -1.6], look: [-2.6, GROUND, -1.6], cone: true, lab: 'sh.overview', tag: [37,31] },
+                       { p: [-.6, 2.9, 3.4], lab: 'sh.relay', tag: [21,40] }] },
+      fire:   { sc: 'fire', cam: [[8.0, 6.2, 10.4], [-.4, 2.2, .3]], carrier: [[.6, 4.7, -1.8], -.2],
+                kids: [{ p: [-1.4, 2.1, .4], look: [-1.4, GROUND, .4], cone: true, lab: 'sh.hot', tag: [30,40] },
+                       { p: [2.4, 2.6, -1.8], look: [.1, GROUND, 0], cone: true, lab: 'sh.front', tag: [82,60] },
+                       { p: [3.6, 3.8, 2.4], lab: 'sh.relay', tag: [80,35] }] },
+      rescue: { sc: 'rescue', cam: [[7.6, 5.6, 9.8], [.4, 1.9, .3]], carrier: [[-1.2, 4.4, -2.2], .5],
+                kids: [{ p: [1.3, 1.2, .9], lab: 'sh.drop', tag: [68,50] },
+                       { p: [-2.4, 1.9, -.6], look: [-2.4, GROUND, -.6], cone: true, lab: 'sh.thermal', tag: [30,35] }] },
+      sea:    { sc: 'sea', cam: [[9.4, 6.6, 11.0], [-.8, 2.0, .6]], carrier: [[-.6, 4.9, -3.0], .9],
+                kids: [{ p: [2.0, 1.3, 2.1], look: [3.4, GROUND + .4, .6], cone: true, lab: 'sh.vessel', tag: [76,50] },
+                       { p: [-2.2, 2.3, 3.0], look: [-2.2, GROUND, 3.0], cone: true, lab: 'sh.sector', tag: [35,10] },
+                       { p: [-6.4, 2.8, 1.6], lab: 'sh.relay', tag: [29,27] }] },
+      farm:   { sc: 'farm', cam: [[8.8, 7.2, 10.8], [0, 1.6, 0]], carrier: [[-1.0, 4.6, -2.4], .2],
+                kids: [{ p: [.2, 1.8, 1.6], look: [.2, GROUND, 1.6], cone: true, lab: 'sh.field', tag: [65,43] },
+                       { p: [-4.2, 1.8, -2.4], look: [-4.2, GROUND, -2.4], cone: true, lab: 'sh.water', tag: [23,28] }] },
+    };
+    const SIZE_CARD = [1440, 900], DOWNSCALE = isMobile ? .6 : 1;
+    const LABEL_DIV_CARD = 50, LABEL_DIV_CORE = 70;  // label font = picture width ÷ this (smaller number = larger text)
+    const shots = {};                                  // name → { base canvas, labels [{x,y,key}] }
+
+    function shoot(name){
+      const cfg = SHOTS[name], [W0, H0] = cfg.size || SIZE_CARD, W = Math.round(W0*DOWNSCALE), H = Math.round(H0*DOWNSCALE);
+      // 1 · scene state for this scenario
+      Object.values(SC).forEach(g => g.visible = false);
+      if (cfg.sc) SC[cfg.sc].visible = true;
+      park.visible = !!cfg.park; park.position.x = 0;
+      carrier.position.fromArray(cfg.carrier[0]); carrier.rotation.set(0, cfg.carrier[1], 0); carrier.scale.setScalar(.75); carrier.updateMatrixWorld();
+      liftRotors.forEach(r => { r.discMat.opacity = .16; r.blades.rotation.y = rng()*6; }); pusher.discMat.opacity = 0;
+      U.uFlat.value = 1; U.uSweepAmt.value = 0; U.uPx.value = 1;
+      children.forEach((c, i) => {
+        const k = cfg.kids[i]; c.g.visible = !!k; c.cone.visible = false; c.link.material.opacity = 0; U.uSpots.value[i].set(0, 0, 0, 0);
+        if (!k) return;
+        c.g.scale.setScalar(1); c.g.position.fromArray(k.p);
+        c.rotors.forEach(r => { r.discMat.opacity = .16; r.blades.rotation.y = rng()*6; });
+        const lk = k.look ? V(...k.look) : null;
+        c.g.rotation.set(0, lk ? Math.atan2(-(lk.z - k.p[2]), lk.x - k.p[0]) : rng()*3, 0);
+        if (lk && k.cone){ tmp.subVectors(lk, c.g.position); const len = Math.max(tmp.length(), .01);
+          c.cone.position.copy(c.g.position); c.cone.quaternion.setFromUnitVectors(down, tmp.normalize());
+          const rad = Math.max(.6, len*.5); c.cone.scale.set(rad, len, rad); c.coneMat.opacity = .13; c.cone.visible = true;
+          U.uSpots.value[i].set(lk.x, lk.z, lk.y < 0 ? .9 : .45, 0); }
+        const lp = c.link.geometry.attributes.position;
+        lp.setXYZ(0, carrier.position.x, carrier.position.y - .3, carrier.position.z); lp.setXYZ(1, k.p[0], k.p[1], k.p[2]); lp.needsUpdate = true;
+        c.link.material.opacity = .5;
+      });
+      // 2 · camera + render at a fixed size on the carbon background
+      camera.aspect = W / H; camera.updateProjectionMatrix();
+      camera.position.fromArray(cfg.cam[0]); camera.lookAt(V(...cfg.cam[1]));
+      const pr = renderer.getPixelRatio();
+      renderer.setPixelRatio(1); renderer.setSize(W, H, false); renderer.setClearColor(0x0d0d0d, 1);
+      renderer.render(scene, camera);
+      const base = document.createElement('canvas'); base.width = W; base.height = H; base.getContext('2d').drawImage(renderer.domElement, 0, 0, W, H);
+      // 3 · label anchors (projected child positions)
+      const labels = cfg.kids.map((k, i) => { const v = V(k.p[0], k.p[1] + .08, k.p[2]).project(camera);
+        return { x: (v.x*.5 + .5)*W, y: (-v.y*.5 + .5)*H, key: k.lab, tag: k.tag }; });
+      shots[name] = { base, labels };
+      // 4 · restore the live scene
+      renderer.setClearColor(0x000000, 0); renderer.setPixelRatio(pr); U.uPx.value = pr;
+      Object.values(SC).forEach(g => g.visible = false);
+      children.forEach(c => c.g.visible = true);
+      resize();
+    }
+
+    // draw labels (current language) onto each render and hand the result to the <img> tags
+    function compose(){
+      const d = I18N[lang];
+      Object.entries(shots).forEach(([name, { base, labels }]) => {
+        const c = document.createElement('canvas'); c.width = base.width; c.height = base.height; const g = c.getContext('2d');
+        g.drawImage(base, 0, 0);
+        const fs = Math.round(base.width / (name === 'core' ? LABEL_DIV_CORE : LABEL_DIV_CARD));
+        g.font = `500 ${fs}px "IBM Plex Mono", ui-monospace, Menlo, monospace`;
+        if ('letterSpacing' in g) g.letterSpacing = `${Math.round(fs*.1)}px`;
+        // 1 · a box per label: centred on its "tag" position (% of the picture) if one is set, otherwise just above its UAV
+        const pad = fs*.75, bh = fs*2.0, gap = fs*.6, M8 = fs*.5;
+        const B = labels.map(l => { const txt = (d[l.key] || '').replace(/<[^>]+>/g, ''), w = g.measureText(txt).width + pad*2;
+          if (l.tag) return { txt, w, h: bh, ax: l.x, ay: l.y, x: l.tag[0]/100*c.width - w/2, y: l.tag[1]/100*c.height - bh/2, pin: true };
+          return { txt, w, h: bh, ax: l.x, ay: l.y, x: l.x - w/2, y: l.y - bh*1.7 }; });
+        const keepIn = b => { b.x = Math.min(Math.max(b.x, M8), c.width - b.w - M8); b.y = Math.min(Math.max(b.y, M8), c.height - b.h - M8); };
+        B.forEach(keepIn);
+        // 2 · push overlapping boxes apart (mostly vertically) until no two boxes touch
+        for (let it = 0; it < 80; it++){
+          let moved = false;
+          for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++){
+            const a = B[i], b = B[j];
+            if (a.pin && b.pin) continue;                // two pinned tags are left exactly where they were placed
+            const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) + gap, oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) + gap;
+            if (ox > 0 && oy > 0){
+              moved = true;
+              if (oy < ox){ const [up, dn] = a.y <= b.y ? [a, b] : [b, a];
+                if (up.pin) dn.y += oy; else if (dn.pin) up.y -= oy; else { up.y -= oy/2; dn.y += oy/2; } }
+              else { const [lf, rt] = a.x <= b.x ? [a, b] : [b, a];
+                if (lf.pin) rt.x += ox; else if (rt.pin) lf.x -= ox; else { lf.x -= ox/2; rt.x += ox/2; } }
+              keepIn(a); keepIn(b);
+            }
+          }
+          if (!moved) break;
+        }
+        // 3 · leader line + dot to the UAV, then the box and text
+        B.forEach(b => {
+          const ex = Math.min(Math.max(b.ax, b.x + fs), b.x + b.w - fs), ey = b.ay < b.y ? b.y : b.y + b.h;
+          g.strokeStyle = 'rgba(91,134,255,.85)'; g.lineWidth = Math.max(1, fs/14);
+          g.beginPath(); g.moveTo(ex, ey); g.lineTo(b.ax, b.ay); g.stroke();
+          g.fillStyle = '#5b86ff'; g.beginPath(); g.arc(b.ax, b.ay, Math.max(2, fs*.2), 0, Math.PI*2); g.fill();
+        });
+        B.forEach(b => {
+          g.fillStyle = 'rgba(13,13,13,.84)'; g.fillRect(b.x, b.y, b.w, b.h);
+          g.strokeStyle = 'rgba(91,134,255,.8)'; g.lineWidth = Math.max(1, fs/12); g.strokeRect(b.x + .5, b.y + .5, b.w - 1, b.h - 1);
+          g.fillStyle = '#eef1f4'; g.textBaseline = 'middle'; g.fillText(b.txt, b.x + pad, b.y + b.h/2 + 1);
+        });
+        const url = c.toDataURL('image/jpeg', .88);
+        document.querySelectorAll(`img[data-shot="${name}"]`).forEach(img => img.src = url);
+      });
+    }
+    window.__jatayuShots = compose;                    // called again by the language switch
+
+    const makeShots = () => {
+      try { Object.keys(SHOTS).forEach(shoot); compose(); } catch (err) { console.warn('scenario renders failed', err); }
+      if (S.running) frame();                          // repaint the live animation immediately
+    };
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(makeShots));
+  }
+
+  /* render only while the flight section is on screen (saves battery) */
+  new IntersectionObserver(([e]) => {
+    S.running = e.isIntersecting; renderer.setAnimationLoop(e.isIntersecting ? frame : null);
+  }).observe(document.getElementById('flight'));
+}
+
+/* scroll progress through the flight section (fallback when GSAP is missing) */
+function flightProgress(){
+  const el = document.getElementById('flight'), r = el.getBoundingClientRect();
+  return clamp(-r.top / (el.offsetHeight - innerHeight));
+}
+
+/* ---------- STEP 5 · SCROLL ANIMATIONS ---------- */
+function initScroll(){
+  if (!hasGSAP){ addEventListener('scroll', () => S.targetP = flightProgress(), { passive: true }); return; }
+  gsap.to('h1 .ln > span', { y: 0, duration: 1.05, stagger: .12, ease: 'power4.out' });
+  ScrollTrigger.create({ trigger: '#flight', start: 'top top', end: 'bottom bottom',
+    onUpdate: s => S.targetP = s.progress, onRefresh: s => S.targetP = s.progress });
+
+  document.querySelectorAll('[data-reveal]').forEach(el =>
+    gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' } }));
+
+  gsap.matchMedia().add('(min-width: 901px)', () => {   // pinned horizontal applications (wide screens only)
+    const track = document.getElementById('hwrap');
+    const dist = () => Math.max(0, track.scrollWidth - innerWidth + innerWidth*.06);
+    gsap.to(track, { x: () => -dist(), ease: 'none',
+      scrollTrigger: { trigger: '#missions', start: 'top top', end: () => '+=' + dist(), pin: true, scrub: .6, invalidateOnRefresh: true } });
+  });                                                  // below 901 px GSAP removes the pin and resets the cards
+  ScrollTrigger.create({ start: 80, end: 'max', onUpdate: s =>
+    document.getElementById('topbar').classList.toggle('scrolled', s.scroll() > 80) });
+
+  document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href')); if (!target) return;
+    e.preventDefault();
+    if (lenis) lenis.scrollTo(target, { duration: 1.4 }); else target.scrollIntoView({ behavior: 'smooth' });
+  }));
+  ScrollTrigger.refresh();
+}
+
+/* ---------- STEP 6 · CURSOR ---------- */
+const cur = document.getElementById('cursor');
+if (matchMedia('(hover:hover) and (pointer:fine)').matches){
+  let cx = -100, cy = -100, px = -100, py = -100;
+  addEventListener('pointermove', e => { cx = e.clientX; cy = e.clientY; cur.classList.add('on'); }, { passive: true });
+  (function follow(){ px += (cx-px)*.2; py += (cy-py)*.2; cur.style.transform = `translate(${px}px,${py}px) translate(-50%,-50%)`; requestAnimationFrame(follow); })();
+  document.addEventListener('pointerover', e => cur.classList.toggle('grow', !!e.target.closest('a,button,[data-hover]')));
+}
+
+/* ---------- BOOT ---------- */
+runPreloader(initScroll);
+
+</script>
+</body>
+</html>
